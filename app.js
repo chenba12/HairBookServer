@@ -7,6 +7,8 @@ const logger = require('morgan');
 const fs = require('fs');
 const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
+const barbersRouter = require('./routes/barbers')
+const loginRouter = require('./routes/login')
 const app = express();
 
 
@@ -120,7 +122,8 @@ setInterval(() => {
 app.use(customLogger);
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
-
+app.use('/barbers', barbersRouter);
+app.use('/login', loginRouter)
 
 app.post('/barbers', async (req, res) => {
   // Reference to the location in the database where you want to insert the string
