@@ -20,15 +20,15 @@ router.put('/updatereview',(req,res)=>{
 router.delete('/deletereview',(req,res)=>{
 });
 // full name, id, barbershop id, date
-router.post(('/bookhaircut/'),(req,res)=>{
+router.post(('/bookhaircut'),(req,res)=>{
 
 });
 // barbershop id, book id, date
-router.put(('/updatehaircut/'),(req,res)=>{
+router.put(('/updatehaircut'),(req,res)=>{
 
 });
 // book id
-router.delete(('/deletehaircut/'),(req,res)=>{
+router.delete(('/deletehaircut'),(req,res)=>{
 
 });
 // id, full name, age

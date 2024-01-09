@@ -5,7 +5,7 @@ router.post('/createbarbershop', (req,res)=>{
 
 });
 // barbershop id
-router.delete(('./deletebarbershop'),(req,res)=>{
+router.delete(('/deletebarbershop'),(req,res)=>{
 
 });
 // barbershop id, barbershop name, opening hours, services
