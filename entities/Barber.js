@@ -1,5 +1,5 @@
 class BarberDTO {
-    constructor(_id,email, first_name, last_name, barber_shops) {
+    constructor({_id,email, first_name, last_name, barber_shops}) {
         this._id = _id
         this.email=email
         this.first_name = first_name

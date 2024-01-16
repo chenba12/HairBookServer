@@ -1,5 +1,5 @@
 class CustomerDTO {
-    constructor(_id, email, first_name, last_name, age, phone_number, my_booking, my_reviews) {
+    constructor({_id, email, first_name, last_name, age, phone_number, my_booking, my_reviews}) {
         this._id = _id
         this.email = email
         this.first_name = first_name

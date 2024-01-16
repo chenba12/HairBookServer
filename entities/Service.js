@@ -1,5 +1,5 @@
 class ServiceDTO {
-    constructor(_id, service_name,price, _barbershop_id) {
+    constructor({_id, service_name,price, _barbershop_id}) {
         this._id = _id
         this.service_name=service_name
         this.price=price
