@@ -10,7 +10,6 @@ const indexRouter = require('./routes/index');
 const usersRouter = require('./routes/users');
 const barbersRouter = require('./routes/barbers')
 const loginRouter = require('./routes/login')
-const bookingRouter = require('./routes/booking')
 const app = express();
 
 
@@ -58,7 +57,6 @@ const customLogger = (req, res, next) => {
     const body = req.body;
 
 
-
     // Save request and response log to the same file with timestamp
     const logData = `[${startTimestamp.toLocaleTimeString()}] [Request] ${method} ${url}\nQuery Parameters: ${JSON.stringify(queryParams)}\nHeaders: ${JSON.stringify(headers)}\nRequest Body: ${JSON.stringify(body)}\n\n`;
 
@@ -68,7 +66,6 @@ const customLogger = (req, res, next) => {
         // Log response details to the console
         const endTimestamp = new Date();
         const timeTaken = endTimestamp - startTimestamp;
-
 
         // Append response log to the existing log file
         const responseLogData = `\n[${endTimestamp.toLocaleTimeString()}] [Response] ${method} ${url}\nResponse Body: ${JSON.stringify(responseBody)}\nStatus: ${res.statusCode} \n\nTime taken: ${timeTaken}ms\n\n`;
@@ -130,7 +127,6 @@ app.use('/', indexRouter);
 app.use('/users', usersRouter);
 app.use('/barbers', barbersRouter);
 app.use('/login', loginRouter)
-app.use('/booking', bookingRouter)
 
 app.post('/barbers', async (req, res) => {
     const data = {

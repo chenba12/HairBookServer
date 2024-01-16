@@ -14,13 +14,6 @@ router.get('/allbarbers', async (req, res) => {
         barbers.forEach( (barberDoc) => {
             // Get the data from the barber document
             const barberData = barberDoc.data();
-
-
-            // // Create a new BarberShopDTO instance using the retrieved data
-            // const barberDTO = new BarberDTO(
-            //     barberData
-            // );
-
             // Add the BarberShopDTO instance to the 'allBarbers' array
             allBarbers.push(barberData);
         });

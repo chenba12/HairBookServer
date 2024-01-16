@@ -1,5 +1,5 @@
 class BarberShopDTO {
-    constructor({barbershop_name, phone_number, working_days, sunday_hours, monday_hours,tuesday_hours, wednesday_hours, thursday_hours, friday_hours, saturday_hours,services , reviews, total_rating}) {
+    constructor({barbershop_name, phone_number, working_days, sunday_hours, monday_hours,tuesday_hours, wednesday_hours, thursday_hours, friday_hours, saturday_hours,services , reviews, total_rating, _barber_id}) {
         this.barbershop_name = barbershop_name
         this.phone_number = phone_number
         this.working_days = working_days
@@ -13,6 +13,7 @@ class BarberShopDTO {
         this.services = services
         this.reviews = reviews
         this.toal_rating = total_rating
+        this._barber_id=_barber_id;
     }
 }
 
