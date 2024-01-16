@@ -1,5 +1,5 @@
 class ReviewDTO {
-    constructor({_id, first_name, last_name, review, rating, timestamp, _user_id, _barbershop_id}) {
+    constructor({first_name, last_name, review, rating, timestamp, _user_id, _barbershop_id}) {
         this.first_name = first_name
         this.last_name = last_name
         this.review = sentence
