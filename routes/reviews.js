@@ -1,7 +1,7 @@
-var express = require('express');
-const {db} = require("../firebase-admin-init");
+const express = require('express');
+const {db} = require("../utils");
 const ReviewDTO = require("../entities/Review");
-var router = express.Router();
+const router = express.Router();
 const Message = require("../entities/Message");
 const moment = require("moment");
 

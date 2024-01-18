@@ -1,8 +1,6 @@
-var express = require('express');
-var router = express.Router();
-const {firebaseAdmin, db} = require('../firebase-admin-init'); // Import the Firebase Admin SDK initialization
-const BarberDTO = require('../entities/Barber')
-const BookingDTO = require("../entities/Booking");
+const express = require('express');
+const router = express.Router();
+const {db} = require('../utils');
 router.get('/allbarbers', async (req, res) => {
     try {
         // Use collectionGroup to query all 'barbers' subcollections

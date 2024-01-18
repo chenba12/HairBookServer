@@ -1,7 +1,7 @@
-var express = require('express');
+const express = require('express');
 const BookingDTO = require("../entities/Booking");
-const {db} = require("../firebase-admin-init");
-var router = express.Router();
+const {db} = require("../utils");
+const router = express.Router();
 
 router.post(('/bookhaircut'), async (req, res) => {
     try {

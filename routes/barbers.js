@@ -1,10 +1,10 @@
-var express = require('express');
-const CustomerDTO = require("../entities/Customer");
-var router = express.Router();
-const {firebaseAdmin, db} = require('../firebase-admin-init'); // Import the Firebase Admin SDK initialization
+const express = require('express');
+const router = express.Router();
+const {db} = require('../utils');
 const BarberShopDTO = require('../entities/BarberShop')
-const BookingDTO=require('../entities/Booking')
+const BookingDTO = require('../entities/Booking')
 const Message = require('../entities/Message')
+
 // barbershop id, barbershop name, opening hours, services
 router.post('/create_barbershop', async (req, res) => {
     try {
@@ -50,16 +50,16 @@ router.get('/my_bookings', async (req, res) => {
     console.log(barbershop_id);
     const booking_snapshot = await db.collection('Bookings').where("_barbershop_id", "==", barbershop_id).get();
     if (booking_snapshot.empty) {
-        const error1 = new Message("There Is No Bookings Available",null,0);
+        const error1 = new Message("There Is No Bookings Available", null, 0);
         return res.status(404).send(error1);
     }
-    const bookings=[]
+    const bookings = []
     await booking_snapshot.forEach(doc => {
-        const booking=new BookingDTO(doc.data());
-        bookings.push( Object.assign({}, {"id":doc.id}, booking));
+        const booking = new BookingDTO(doc.data());
+        bookings.push(Object.assign({}, {"id": doc.id}, booking));
     })
     console.log(bookings);
-    const success=new Message("Your Bookings Is:",bookings,1);
+    const success = new Message("Your Bookings Is:", bookings, 1);
     res.send(success);
 });
 // id, booking id, date
@@ -67,7 +67,7 @@ router.put('/update_booking', async (req, res) => {
     try {
         const _barber_id = req.query.barber_id;
         const barbershop_id = req.query.barbershop_id;
-        const booking_id=req.query.booking_id;
+        const booking_id = req.query.booking_id;
         // Check if the user is authorized to delete the booking
         const barber_shop_snapshot = await db.collection('BarberShops').doc(barbershop_id).get();
         const barber_shop_data = barber_shop_snapshot.data();
@@ -75,12 +75,12 @@ router.put('/update_booking', async (req, res) => {
             const data = new BookingDTO(req.body);
             const plainObject = {...data};
             // User is authorized, proceed with deletion
-            const update= await db.collection('Bookings').doc(booking_id).update(plainObject);
-            const success=new Message("Booking updated successfully!",update,1);
+            const update = await db.collection('Bookings').doc(booking_id).update(plainObject);
+            const success = new Message("Booking updated successfully!", update, 1);
             res.status(200).send(success);
         } else {
             // Unauthorized access
-            const error=new Message("You can't update this Booking!",null,0);
+            const error = new Message("You can't update this Booking!", null, 0);
             res.status(401).send(error);
         }
     } catch (error) {
@@ -93,18 +93,18 @@ router.delete('/delete_booking', async (req, res) => {
     try {
         const _barber_id = req.query.barber_id;
         const barbershop_id = req.query.barbershop_id;
-        const booking_id=req.query.booking_id;
+        const booking_id = req.query.booking_id;
         // Check if the user is authorized to delete the booking
         const barber_shop_snapshot = await db.collection('BarberShops').doc(barbershop_id).get();
         const barber_shop_data = barber_shop_snapshot.data();
         if (_barber_id === barber_shop_data._barber_id) {
             // User is authorized, proceed with deletion
             await db.collection('Bookings').doc(booking_id).delete();
-            const success=new Message("Booking deleted successfully!",null,1);
+            const success = new Message("Booking deleted successfully!", null, 1);
             res.status(200).send(success);
         } else {
             // Unauthorized access
-            const error=new Message("You can't delete this Booking!",null,0);
+            const error = new Message("You can't delete this Booking!", null, 0);
             res.status(401).send(error);
         }
     } catch (error) {
