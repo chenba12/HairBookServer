@@ -4,14 +4,13 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const indexRouter = require('./routes/index');
-const usersRouter = require('./routes/users');
+const customerRouter = require('./routes/customer');
 const barbersRouter = require('./routes/barbers')
-const loginRouter = require('./routes/login')
+const authRouter = require('./routes/auth')
 const reviewsRouter = require('./routes/reviews')
 const bookingRouter = require('./routes/booking')
-const {readdir} = require("fs");
+const {readdir, statSync} = require("fs");
 const {customLogger, deleteLogFile} = require("./utils");
-const {} = require("./utils");
 
 const app = express();
 
@@ -29,9 +28,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Set up custom logging middleware
 app.use(customLogger);
 app.use('/', indexRouter);
-app.use('/users', usersRouter);
+app.use('/customer', customerRouter);
 app.use('/barbers', barbersRouter);
-app.use('/login', loginRouter);
+app.use('/auth', authRouter);
 app.use('/reviews', reviewsRouter);
 app.use('/booking', bookingRouter);
 
@@ -52,7 +51,7 @@ setInterval(() => {
             // Check if the file is a combined log file
             if (file.startsWith('combined_log_')) {
                 // Get the file's creation time
-                const stats = fs.statSync(filePath);
+                const stats = statSync(filePath);
                 const creationTime = new Date(stats.birthtime);
 
                 // Calculate the age of the file in milliseconds

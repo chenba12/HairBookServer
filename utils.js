@@ -1,10 +1,18 @@
 const fs = require('fs');
 const {appendFile, readdir} = require("fs");
-
 const admin = require('firebase-admin');
 const serviceAccount = require('./hairbook-45906-firebase-adminsdk-e1ys3-a4207ff8e3.json');
 const {getFirestore} = require("firebase-admin/firestore");
 const path = require("path");
+const jwt = require('jsonwebtoken');
+
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+});
+const db = getFirestore();
+
+
 // Function to delete the log file
 const deleteLogFile = (filePath) => {
 
@@ -56,10 +64,37 @@ const customLogger = (req, res, next) => {
     next();
 };
 
+const {getAuth} = require("firebase-admin/auth");
 
-admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount),
-});
-const db = getFirestore();
+const verifyAccessToken = async (req, res, next) => {
+    try {
+        const accessToken = req.headers.authorization.split(' ')[1];
+        if (!accessToken) {
+            return res.status(401).json({error: 'Access token not provided'});
+        }
+        // Verify the access token
+        const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
+        // Retrieve the user from the database based on the decoded information (e.g., email)
+        const userSnapshot = await db.collection('Users').where('email', '==', decoded.email).get();
+        if (!userSnapshot.empty) {
+            const user = userSnapshot.docs[0].data();
+            // Attach user role to the request for use in subsequent middleware or route handlers
+            req.userRole = user.role;
+            // Continue to the next middleware or route handler
+            next();
+        } else {
+            return res.status(401).json({error: 'User not found'});
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        return res.status(401).json({error: 'Invalid access token'});
+    }
+};
 
-module.exports = {admin, db,deleteLogFile,customLogger};
+async function isEmailUnique(email) {
+    const querySnapshot = await db.collection('Users').where('email', '==', email).get();
+    console.log('Query Snapshot:', querySnapshot.docs.map(doc => doc.data()));
+    return querySnapshot.empty;
+}
+
+module.exports = {admin, db, deleteLogFile, customLogger, verifyAccessToken};
