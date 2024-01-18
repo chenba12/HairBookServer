@@ -5,11 +5,11 @@ const router = express.Router();
 
 router.post(('/bookhaircut'), async (req, res) => {
     try {
-// Directly create an instance of BookingDTO using req.body
+        // Directly create an instance of BookingDTO using req.body
         const data = new BookingDTO(req.body);
         const plainObject = {...data};
         // Send a response or perform other actions
-        const write_result = await db.collection('Bookings').doc().set(plainObject);
+        await db.collection('Bookings').doc().set(plainObject);
         res.status(200).json({message: 'Your booking has been sent!', data: BookingDTO});
     } catch (error) {
         console.error(error);
@@ -27,7 +27,7 @@ router.put(('/updatebooking'), async (req, res) => {
 
         if (_user_id === updatedBookingData._user_id) {
             const updatedBookingObject = {...updatedBookingData};
-            const updateResult = await db.collection('Bookings').doc(bookingId).update(updatedBookingObject);
+            await db.collection('Bookings').doc(bookingId).update(updatedBookingObject);
             res.status(200).json({message: 'Booking updated successfully!', data: updatedBookingObject});
         }
         res.status(401).json({message: 'Cant update =['})

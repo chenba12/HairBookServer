@@ -29,29 +29,5 @@ router.get('/allbarbers', async (req, res) => {
         res.status(500).json({error: 'Internal Server Error'});
     }
 });
-/* GET users listing. */
-//
-// _user_id
-router.get('/show_my_reviews', (req, res) => {
-
-});
-// _user_id _barbershop_id, first_name,last_name, date, review, rating
-router.post('/postreview', (req, res) => {
-
-});
-// Review
-router.put('/updatereview', (req, res) => {
-
-});
-// barbershop id, full name, date, review
-router.delete('/deletereview', (req, res) => {
-
-});
-
-
-// id, full name, age
-router.put('/updatemydetails', (req, res) => {
-
-})
 
 module.exports = router;

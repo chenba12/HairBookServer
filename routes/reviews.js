@@ -15,7 +15,7 @@ router.post('/createNewReview', async (req, res) => {
         const booking = await db.collection('Bookings').doc(reviewDTO.booking_id).get();
         const currentDate = moment.now()
         const targetDateString = booking.data().time;
-// Parse the target date string into a Date object
+        // Parse the target date string into a Date object
         const targetDate = moment(targetDateString);
         if (!booking.exists) {
             const error1 = new Message("There is no such booking",null,0);
@@ -26,7 +26,7 @@ router.post('/createNewReview', async (req, res) => {
             res.status(400).json(error1);
         }
         else {
-            const write_result = await db.collection('Reviews').doc().set(data);
+            await db.collection('Reviews').doc().set(data);
             res.status(200).json({message: 'Review created successfully', review: reviewDTO});
         }
     } catch (error) {
