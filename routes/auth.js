@@ -1,12 +1,15 @@
 require('dotenv').config();
 const express = require('express');
 const router = express.Router();
-const {isEmailUnique} = require('../utils');
+const {isEmailUnique, verifyAccessToken} = require('../utils');
 const jwt = require('jsonwebtoken');
 const {db, admin} = require('../utils');
 const {getAuth} = require("firebase-admin/auth");
 const bcrypt = require("bcrypt");
 const User = require("../entities/User");
+const Message = require("../entities/Message");
+
+const blacklist = new Set();
 router.post('/login', async (req, res) => {
     try {
         const {email, password} = req.body;
@@ -19,18 +22,16 @@ router.post('/login', async (req, res) => {
             const passwordMatch = await bcrypt.compare(password, hashedPassword);
             if (passwordMatch) {
                 const accessToken = jwt.sign({email: user.email, role: user.role}, process.env.ACCESS_TOKEN_SECRET);
-
-                res.json({user: user, accessToken: accessToken});
+                res.json(new Message("Authentication successfully", {user: user, accessToken: accessToken}, 1));
             } else {
-                // Passwords do not match, authentication failed
-                res.status(401).json({error: 'Authentication failed. Invalid email or password.'});
+                res.status(401).json(new Message("Authentication failed. Invalid email or password.", null, 0));
             }
         } else {
-            res.status(401).json({error: 'Authentication failed. Invalid email or password.'});
+            res.status(401).json(new Message("Authentication failed. Invalid email or password.", null, 0));
         }
     } catch (error) {
         console.error('Error:', error);
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json(new Message("Internal server error.", null, 0));
     }
 });
 
@@ -47,12 +48,18 @@ router.post('/signup', async (req, res) => {
             const write_result = await db.collection('Users').doc().set(plainObject);
             res.json({user: data, access_token: access_token});
         } else {
-            res.status(400).json({error: 'Email already exists'});
+            res.status(400).json(new Message("Email already exists.", null, 0)
+            );
         }
     } catch (error) {
         console.log(error);
-        res.status(500).json({error: 'Internal server error'});
+        res.status(500).json(new Message("Internal server error.", null, 0));
     }
+});
+
+router.post('/signout', verifyAccessToken, (req, res) => {
+    blacklist.add(token);
+    res.json(new Message("Successfully signed out.", null, 1));
 });
 
 

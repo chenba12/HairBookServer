@@ -5,7 +5,8 @@ const serviceAccount = require('./hairbook-45906-firebase-adminsdk-e1ys3-a4207ff
 const {getFirestore} = require("firebase-admin/firestore");
 const path = require("path");
 const jwt = require('jsonwebtoken');
-
+const moment = require("moment");
+const Message = require("./entities/Message");
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -64,31 +65,35 @@ const customLogger = (req, res, next) => {
     next();
 };
 
-const {getAuth} = require("firebase-admin/auth");
-const moment = require("moment");
 
 const verifyAccessToken = async (req, res, next) => {
     try {
-        const accessToken = req.headers.authorization.split(' ')[1];
-        if (!accessToken) {
-            return res.status(401).json({error: 'Access token not provided'});
+        const authorizationHeader = req.headers.authorization;
+        if (!authorizationHeader) {
+            return res.status(401).json(new Message('Access token not provided', null, 0));
         }
+        const token = authorizationHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json(new Message('Invalid access token format', null, 0));
+        }
+
         // Verify the access token
-        const decoded = jwt.verify(accessToken, process.env.ACCESS_TOKEN_SECRET);
-        // Retrieve the user from the database based on the decoded information (e.g., email)
+        const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userSnapshot = await db.collection('Users').where('email', '==', decoded.email).get();
         if (!userSnapshot.empty) {
             const user = userSnapshot.docs[0].data();
             // Attach user role to the request for use in subsequent middleware or route handlers
             req.userRole = user.role;
-            // Continue to the next middleware or route handler
+            req.userEmail = user.email;
+            req.userToken = token;
+            req.userId = userSnapshot.docs[0].id;
             next();
         } else {
-            return res.status(401).json({error: 'User not found'});
+            return res.status(401).json(new Message('User not found', null, 0));
         }
     } catch (error) {
-        console.error('Error:', error);
-        return res.status(401).json({error: 'Invalid access token'});
+        console.error('Error in verifyAccessToken:', error);
+        return res.status(401).json(new Message('Invalid access token', null, 0));
     }
 };
 
@@ -120,4 +125,14 @@ function extractDayMonthYear(date) {
     return {day, month, year};
 }
 
-module.exports = {admin, db, deleteLogFile, customLogger, verifyAccessToken};
+module.exports = {
+    admin,
+    db,
+    deleteLogFile,
+    customLogger,
+    verifyAccessToken,
+    isEmailUnique,
+    isDatePastCertainDate,
+    extractHoursAndMinutes,
+    extractDayMonthYear
+};
