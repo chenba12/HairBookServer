@@ -65,6 +65,7 @@ const customLogger = (req, res, next) => {
 };
 
 const {getAuth} = require("firebase-admin/auth");
+const moment = require("moment");
 
 const verifyAccessToken = async (req, res, next) => {
     try {
@@ -95,6 +96,28 @@ async function isEmailUnique(email) {
     const querySnapshot = await db.collection('Users').where('email', '==', email).get();
     console.log('Query Snapshot:', querySnapshot.docs.map(doc => doc.data()));
     return querySnapshot.empty;
+}
+
+function isDatePastCertainDate(currentDateStr, bookingDateStr) {
+    const currentDate = moment(currentDateStr, 'DD-MM-YYYY HH:mm');
+    const bookingDate = moment(bookingDateStr, 'DD-MM-YYYY HH:mm');
+
+    return currentDate.isBefore(bookingDate);
+}
+
+function extractHoursAndMinutes(date) {
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+
+    return {hours, minutes};
+}
+
+function extractDayMonthYear(date) {
+    const day = date.getDate();
+    const month = date.getMonth() + 1;
+    const year = date.getFullYear();
+
+    return {day, month, year};
 }
 
 module.exports = {admin, db, deleteLogFile, customLogger, verifyAccessToken};
