@@ -1,7 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const router = express.Router();
-const {isEmailUnique, verifyAccessToken} = require('../utils');
+const {isEmailUnique, verifyAccessToken, addToBlacklist} = require('../utils');
 const jwt = require('jsonwebtoken');
 const {db, admin} = require('../utils');
 const {getAuth} = require("firebase-admin/auth");
@@ -9,7 +9,7 @@ const bcrypt = require("bcrypt");
 const User = require("../entities/User");
 const Message = require("../entities/Message");
 
-const blacklist = new Set();
+
 router.post('/login', async (req, res) => {
     try {
         const {email, password} = req.body;
@@ -36,7 +36,7 @@ router.post('/login', async (req, res) => {
 });
 
 // Signup
-router.post('/signup', async (req, res) => {
+router.post('/sign-up', async (req, res) => {
     try {
         const data = new User(req.body);
         const access_token = jwt.sign({email: data.email, role: data.role}, process.env.ACCESS_TOKEN_SECRET);
@@ -57,9 +57,9 @@ router.post('/signup', async (req, res) => {
     }
 });
 
-router.post('/signout', verifyAccessToken, (req, res) => {
-    blacklist.add(token);
-    res.json(new Message("Successfully signed out.", null, 1));
+router.post('/sign-out', verifyAccessToken, async (req, res) => {
+    await addToBlacklist(req.userToken);
+    res.json(new Message('Successfully signed out.', null, 1));
 });
 
 

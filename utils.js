@@ -12,7 +12,7 @@ admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
 });
 const db = getFirestore();
-
+const revokedTokensCollection = db.collection('revokedTokens');
 
 // Function to delete the log file
 const deleteLogFile = (filePath) => {
@@ -34,14 +34,11 @@ const customLogger = (req, res, next) => {
     const queryParams = req.query;
     const headers = req.headers;
     const body = req.body;
-
-    // Save request and response log to the same file with timestamp
     const logData = `[${startTimestamp.toLocaleTimeString()}] [Request] ${method} ${url}\nQuery Parameters: ${JSON.stringify(queryParams)}\nHeaders: ${JSON.stringify(headers)}\nRequest Body: ${JSON.stringify(body)}\n\n`;
 
     // Override res.send to capture response data
     const originalSend = res.send;
     res.send = function (responseBody) {
-        // Log response details to the console
         const endTimestamp = new Date();
         const timeTaken = endTimestamp - startTimestamp;
 
@@ -65,7 +62,19 @@ const customLogger = (req, res, next) => {
     next();
 };
 
-
+const checkUserRole = (expectedRole) => {
+    return (req, res, next) => {
+        if (!req.userRole) {
+            return res.status(401).json(new Message('User role not available', null, 0));
+        }
+        if (req.userRole === expectedRole) {
+            next();
+        } else {
+            console.log('User role:', req.userRole);
+            return res.status(403).json(new Message('Access forbidden. Insufficient role.', null, 0));
+        }
+    };
+};
 const verifyAccessToken = async (req, res, next) => {
     try {
         const authorizationHeader = req.headers.authorization;
@@ -76,18 +85,19 @@ const verifyAccessToken = async (req, res, next) => {
         if (!token) {
             return res.status(401).json(new Message('Invalid access token format', null, 0));
         }
-
-        // Verify the access token
+        const isRevoked = await isTokenRevoked(token);
+        if (isRevoked) {
+            return res.status(401).json(new Message('Access token revoked. Please sign in again.', null, 0));
+        }
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userSnapshot = await db.collection('Users').where('email', '==', decoded.email).get();
         if (!userSnapshot.empty) {
             const user = userSnapshot.docs[0].data();
-            // Attach user role to the request for use in subsequent middleware or route handlers
             req.userRole = user.role;
             req.userEmail = user.email;
             req.userToken = token;
             req.userId = userSnapshot.docs[0].id;
-            next();
+            checkUserRole('Customer')(req, res, next);
         } else {
             return res.status(401).json(new Message('User not found', null, 0));
         }
@@ -95,7 +105,7 @@ const verifyAccessToken = async (req, res, next) => {
         console.error('Error in verifyAccessToken:', error);
         return res.status(401).json(new Message('Invalid access token', null, 0));
     }
-};
+}
 
 async function isEmailUnique(email) {
     const querySnapshot = await db.collection('Users').where('email', '==', email).get();
@@ -125,6 +135,17 @@ function extractDayMonthYear(date) {
     return {day, month, year};
 }
 
+
+const addToBlacklist = async (token) => {
+    await revokedTokensCollection.doc(token).set({ revoked: true });
+};
+
+// Function to check if a token is in the blacklist
+const isTokenRevoked = async (token) => {
+    const snapshot = await revokedTokensCollection.doc(token).get();
+    return snapshot.exists;
+};
+
 module.exports = {
     admin,
     db,
@@ -134,5 +155,8 @@ module.exports = {
     isEmailUnique,
     isDatePastCertainDate,
     extractHoursAndMinutes,
-    extractDayMonthYear
+    extractDayMonthYear,
+    checkUserRole,
+    addToBlacklist,
+    isTokenRevoked,
 };
