@@ -2,36 +2,29 @@ const express = require('express');
 const BookingDTO = require("../entities/Booking");
 const {db, isBookingTimeAvailable, isBookingDateValid, verifyAccessToken, checkUserRole} = require("../utils");
 const moment = require("moment");
-const {DATE_FORMAT, BARBERSHOPS_COLLECTION, BOOKING_COLLECTION} = require("../consts");
+const {DATE_FORMAT, BARBERSHOPS_COLLECTION, BOOKING_COLLECTION, REVIEWS_COLLECTION} = require("../consts");
 const router = express.Router();
 const Message = require("../entities/Message");
 
 
-router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
+router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const bookingData = new BookingDTO(req.body);
-
-        // Fetch the barbershop details
         const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(bookingData._barbershop_id).get();
         const barbershopData = barbershopDoc.data();
-
         if (!barbershopData) {
             return res.status(404).json(new Message('Barbershop not found', null, 0));
         }
-
-        // Check if the booking date is valid
         if (!await isBookingDateValid(bookingData.date, barbershopData, res)) {
             return;
         }
-
-        // Check if there is no other booking at the same time and date
         if (!await isBookingTimeAvailable(bookingData.date, bookingData._barbershop_id, null, res)) {
             return;
         }
-
-        // If all checks pass, create a new booking
-        const bookingPlainObject = {...bookingData};
-        await db.collection(BOOKING_COLLECTION).doc().set(bookingPlainObject);
+        const plainObject = {...bookingData};
+        const bookingRef = await db.collection(BOOKING_COLLECTION).add(plainObject);
+        const bookingId = bookingRef.id;
+        const bookingPlainObject = {booking_id: bookingId, ...bookingData};
         res.status(200).json(new Message('Your booking has been sent!', bookingPlainObject, 1));
     } catch (error) {
         console.error(error);
@@ -39,8 +32,7 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'),asyn
     }
 });
 
-// barbershop id, book id, date
-router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
+router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const _user_id = req.query.user_id;
         const bookingId = req.query.booking_id;
@@ -72,8 +64,7 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'),asy
         res.status(400).json(new Message('Invalid data format or booking not found', null, 0));
     }
 });
-// book id
-router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
+router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const _user_id = req.query.user_id;
         const bookingId = req.query.booking_id;
@@ -91,23 +82,22 @@ router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'),
     }
 });
 
-router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
+router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
-        const _user_id = req.query.user_id;
-        console.log("hey")
+        const _user_id = req.userId;
         const bookingSnapshot = await db.collection(BOOKING_COLLECTION)
             .where('_user_id', '==', _user_id)
             .orderBy('date')
             .get();
-        console.log("hey")
         if (bookingSnapshot.empty) {
             return res.status(404).json(new Message('No bookings found for the user', null, 0));
         }
         const bookings = [];
-        bookingSnapshot.forEach(doc => {
+        for (const doc of bookingSnapshot.docs) {
             const booking = new BookingDTO(doc.data());
-            bookings.push(Object.assign({}, {"id": doc.id}, booking));
-        });
+            const bookingWithId = Object.assign({}, {"booking_id": doc.id}, booking);
+            bookings.push(bookingWithId);
+        }
         return res.status(200).json(new Message('User bookings retrieved successfully', bookings, 1));
     } catch (error) {
         console.error(error);
@@ -116,9 +106,9 @@ router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'),async 
 });
 
 
-router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
+router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
-        const _user_id = req.query.user_id;
+        const _user_id = req.userId;
         const now = moment().format(DATE_FORMAT);
         const closestBookingSnapshot = await db.collection(BOOKING_COLLECTION)
             .where('_user_id', '==', _user_id)
@@ -126,16 +116,19 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'),asyn
             .orderBy('date')
             .limit(1)
             .get();
-
         if (closestBookingSnapshot.empty) {
             return res.status(404).json(new Message('No upcoming bookings found for the user', null, 0));
         }
-        const closestBooking = new BookingDTO(closestBookingSnapshot.docs[0].data());
-        return res.status(200).json(new Message('Closest upcoming booking retrieved successfully', closestBooking, 1));
+        const closestBookingDoc = closestBookingSnapshot.docs[0];
+        const closestBookingData = closestBookingDoc.data();
+        const closestBooking = new BookingDTO(closestBookingData);
+        const closestBookingWithId = Object.assign({}, {"booking_id": closestBookingDoc.id}, closestBooking);
+        return res.status(200).json(new Message('Closest upcoming booking retrieved successfully', closestBookingWithId, 1));
     } catch (error) {
         console.error(error);
         return res.status(500).json(new Message('Internal server error', null, 0));
     }
 });
+
 
 module.exports = router

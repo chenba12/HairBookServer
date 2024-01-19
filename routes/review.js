@@ -15,7 +15,6 @@ router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async 
             .where('_user_id', '==', userId)
             .where('_barbershop_id', '==', barbershopId)
             .get();
-
         if (!existingReview.empty) {
             return res.status(403).json(new Message('You have already posted a review for this barbershop', null, 0));
         }
@@ -30,8 +29,10 @@ router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async 
         if (pastBooking.empty) {
             return res.status(403).json(new Message('You cannot post a review without a past booking at this barbershop', null, 0));
         }
-        const plainReviewObject = {...reviewData};
-        await db.collection(REVIEWS_COLLECTION).doc().set(plainReviewObject);
+        const plainObject = {...reviewData};
+        const reviewRef = await db.collection(REVIEWS_COLLECTION).add(plainObject);
+        const reviewId = reviewRef.id;
+        const plainReviewObject = { review_id: reviewId, ...reviewData };
         return res.status(200).json(new Message('Review posted successfully', plainReviewObject, 1));
     } catch (error) {
         console.error('Error in post_review:', error);

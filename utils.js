@@ -114,7 +114,9 @@ const getUserDetails = async (req, res, next, expectedRole) => {
     try {
         const userSnapshot = await db.collection(USERS_COLLECTION).doc(req.userId).get();
         if (userSnapshot.exists) {
-            req.userDetails = new User(userSnapshot.data());
+            const userDetails = new User(userSnapshot.data());
+            userDetails._user_id = req.userId;
+            req.userDetails = userDetails;
             next();
         } else {
             res.status(404).json(new Message(`${expectedRole} details not found`, null, 0));

@@ -12,14 +12,16 @@ router.get('/get-all-shops', verifyAccessToken, checkUserRole('Customer'), async
         const allBarberShops = [];
         barberShops.forEach((barberDoc) => {
             const barberShopData = barberDoc.data();
+            barberShopData._barbershop_id = barberDoc.id;
             allBarberShops.push(barberShopData);
         });
-        res.json({allBarberShops});
+        res.status(200).json(new Message('All barber shops retrieved successfully', allBarberShops, 1));
     } catch (error) {
         console.error(error);
-        res.status(500).json({error: 'Internal Server Error'});
+        res.status(500).json(new Message('Internal Server Error', null, 0));
     }
 });
+
 
 router.get('/get-customer-details', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     await getUserDetails(req, res, () => {
