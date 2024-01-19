@@ -4,6 +4,7 @@ const {db} = require('../utils');
 const BarberShopDTO = require('../entities/BarberShop')
 const BookingDTO = require('../entities/Booking')
 const Message = require('../entities/Message')
+const {BOOKING_COLLECTION, BARBERSHOPS_COLLECTION} = require("../consts");
 
 // barbershop id, barbershop name, opening hours, services
 router.post('/create_barbershop', async (req, res) => {
@@ -13,7 +14,7 @@ router.post('/create_barbershop', async (req, res) => {
         const plainObject = {...data};
         // Further processing or validation logic can be added here
         // Send a response or perform other actions
-        const write_result = await db.collection('BarberShops').doc().set(plainObject);
+        const write_result = await db.collection(BARBERSHOPS_COLLECTION).doc().set(plainObject);
         res.status(200).json({message: 'BarberShop created successfully', data: BarberShopDTO});
     } catch (error) {
         console.error(error);
@@ -27,7 +28,6 @@ router.get('/get_my_barbershops', async (req, res) => {
 router.delete(('/delete_barbershop'), (req, res) => {
     // Assuming the user and barbershop details are sent in the request body
     const {user, barbershop} = req.body;
-
     // Check if user.id is equal to barbershop.barber.id
     if (user && user.id && barbershop && barbershop.barber && barbershop.barber.id && user.id === barbershop.barber.id) {
         // User is authorized to delete the barbershop
@@ -48,7 +48,7 @@ router.put('/update_barbershop', (req, res) => {
 router.get('/my_bookings', async (req, res) => {
     const barbershop_id = req.query.barbershop_id;
     console.log(barbershop_id);
-    const booking_snapshot = await db.collection('Bookings').where("_barbershop_id", "==", barbershop_id).get();
+    const booking_snapshot = await db.collection(BOOKING_COLLECTION).where("_barbershop_id", "==", barbershop_id).get();
     if (booking_snapshot.empty) {
         const error1 = new Message("There Is No Bookings Available", null, 0);
         return res.status(404).send(error1);
@@ -69,13 +69,13 @@ router.put('/update_booking', async (req, res) => {
         const barbershop_id = req.query.barbershop_id;
         const booking_id = req.query.booking_id;
         // Check if the user is authorized to delete the booking
-        const barber_shop_snapshot = await db.collection('BarberShops').doc(barbershop_id).get();
+        const barber_shop_snapshot = await db.collection(BARBERSHOPS_COLLECTION).doc(barbershop_id).get();
         const barber_shop_data = barber_shop_snapshot.data();
         if (_barber_id === barber_shop_data._barber_id) {
             const data = new BookingDTO(req.body);
             const plainObject = {...data};
             // User is authorized, proceed with deletion
-            const update = await db.collection('Bookings').doc(booking_id).update(plainObject);
+            const update = await db.collection(BOOKING_COLLECTION).doc(booking_id).update(plainObject);
             const success = new Message("Booking updated successfully!", update, 1);
             res.status(200).send(success);
         } else {
@@ -95,7 +95,7 @@ router.delete('/delete_booking', async (req, res) => {
         const barbershop_id = req.query.barbershop_id;
         const booking_id = req.query.booking_id;
         // Check if the user is authorized to delete the booking
-        const barber_shop_snapshot = await db.collection('BarberShops').doc(barbershop_id).get();
+        const barber_shop_snapshot = await db.collection(BARBERSHOPS_COLLECTION).doc(barbershop_id).get();
         const barber_shop_data = barber_shop_snapshot.data();
         if (_barber_id === barber_shop_data._barber_id) {
             // User is authorized, proceed with deletion

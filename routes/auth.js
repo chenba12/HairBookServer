@@ -8,12 +8,13 @@ const {getAuth} = require("firebase-admin/auth");
 const bcrypt = require("bcrypt");
 const User = require("../entities/User");
 const Message = require("../entities/Message");
+const {USERS_COLLECTION} = require("../consts");
 
 
 router.post('/login', async (req, res) => {
     try {
         const {email, password} = req.body;
-        const userSnapshot = await db.collection('Users').where("email", "==", email).get();
+        const userSnapshot = await db.collection(USERS_COLLECTION).where("email", "==", email).get();
 
         if (!userSnapshot.empty) {
             const user = userSnapshot.docs[0].data();
@@ -45,8 +46,8 @@ router.post('/sign-up', async (req, res) => {
         const emailExists = await isEmailUnique(data.email);
         if (emailExists) {
             const plainObject = {...data};
-            const write_result = await db.collection('Users').doc().set(plainObject);
-            res.json({user: data, access_token: access_token});
+            const write_result = await db.collection(USERS_COLLECTION).doc().set(plainObject);
+            res.json(new Message("Authentication successfully", {user: data, access_token: access_token}, 1));
         } else {
             res.status(400).json(new Message("Email already exists.", null, 0)
             );

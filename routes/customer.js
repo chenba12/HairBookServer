@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {db, verifyAccessToken, checkUserRole} = require('../utils');
 const Message = require("../entities/Message");
+const {BARBERSHOPS_COLLECTION} = require("../consts");
 
 //Test for access token and role checking
 router.get('/', verifyAccessToken, checkUserRole('Customer'), (req, res) => {
@@ -9,7 +10,7 @@ router.get('/', verifyAccessToken, checkUserRole('Customer'), (req, res) => {
 });
 router.get('/getAllShops', async (req, res) => {
     try {
-        const barberShops = await db.collectionGroup('BarberShops').get();
+        const barberShops = await db.collectionGroup(BARBERSHOPS_COLLECTION).get();
         const allBarberShops = [];
         barberShops.forEach((barberDoc) => {
             const barberShopData = barberDoc.data();

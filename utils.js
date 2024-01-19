@@ -7,12 +7,13 @@ const path = require("path");
 const jwt = require('jsonwebtoken');
 const moment = require("moment");
 const Message = require("./entities/Message");
+const {DATE_FORMAT, BOOKING_COLLECTION, REVOKED_TOKENS_COLLECTION, USERS_COLLECTION} = require("./consts");
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
 });
 const db = getFirestore();
-const revokedTokensCollection = db.collection('revokedTokens');
+const revokedTokensCollection = db.collection(REVOKED_TOKENS_COLLECTION);
 
 // Function to delete the log file
 const deleteLogFile = (filePath) => {
@@ -90,7 +91,7 @@ const verifyAccessToken = async (req, res, next) => {
             return res.status(401).json(new Message('Access token revoked. Please sign in again.', null, 0));
         }
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
-        const userSnapshot = await db.collection('Users').where('email', '==', decoded.email).get();
+        const userSnapshot = await db.collection(USERS_COLLECTION).where('email', '==', decoded.email).get();
         if (!userSnapshot.empty) {
             const user = userSnapshot.docs[0].data();
             req.userRole = user.role;
@@ -108,33 +109,10 @@ const verifyAccessToken = async (req, res, next) => {
 }
 
 async function isEmailUnique(email) {
-    const querySnapshot = await db.collection('Users').where('email', '==', email).get();
+    const querySnapshot = await db.collection(USERS_COLLECTION).where('email', '==', email).get();
     console.log('Query Snapshot:', querySnapshot.docs.map(doc => doc.data()));
     return querySnapshot.empty;
 }
-
-function isDatePastCertainDate(currentDateStr, bookingDateStr) {
-    const currentDate = moment(currentDateStr, 'DD-MM-YYYY HH:mm');
-    const bookingDate = moment(bookingDateStr, 'DD-MM-YYYY HH:mm');
-
-    return currentDate.isBefore(bookingDate);
-}
-
-function extractHoursAndMinutes(date) {
-    const hours = date.getHours();
-    const minutes = date.getMinutes();
-
-    return {hours, minutes};
-}
-
-function extractDayMonthYear(date) {
-    const day = date.getDate();
-    const month = date.getMonth() + 1;
-    const year = date.getFullYear();
-
-    return {day, month, year};
-}
-
 
 const addToBlacklist = async (token) => {
     await revokedTokensCollection.doc(token).set({ revoked: true });
@@ -146,6 +124,49 @@ const isTokenRevoked = async (token) => {
     return snapshot.exists;
 };
 
+async function isBookingDateValid(date, barbershopData, res) {
+    const currentDate = moment();
+    const requestedDate = moment(date, DATE_FORMAT);
+
+    if (requestedDate.isBefore(currentDate)) {
+        res.status(400).json(new Message('Cannot book or update to a past date', requestedDate, 0));
+        return false;
+    }
+
+    const workingDayIndex = requestedDate.day();
+    let requestedTime;
+
+    if (requestedDate.minutes() === 0) {
+        requestedTime = `${requestedDate.hours()}:00`;
+    } else {
+        requestedTime = `${requestedDate.hours()}:${requestedDate.minutes()}`;
+    }
+
+    if (
+        barbershopData.working_days[workingDayIndex] !== 1 ||
+        !barbershopData.thursday_hours.includes(requestedTime)
+    ) {
+        res.status(400).json(new Message('The barbershop is closed at the requested date/hour', {day:workingDayIndex+1,time:requestedTime}, 0));
+        return false;
+    }
+
+    return true;
+}
+
+async function isBookingTimeAvailable(date, barbershopId, bookingId, res) {
+    const requestedDate = moment(date, DATE_FORMAT);
+    const existingBooking = await db.collection(BOOKING_COLLECTION)
+        .where('_barbershop_id', '==', barbershopId)
+        .where('date', '==', requestedDate.format(DATE_FORMAT))
+        .get();
+    if (!existingBooking.empty) {
+        res.status(400).json(new Message('Another booking exists at the same time and date', null, 0));
+        return false;
+    }
+
+    return true;
+}
+
 module.exports = {
     admin,
     db,
@@ -153,10 +174,9 @@ module.exports = {
     customLogger,
     verifyAccessToken,
     isEmailUnique,
-    isDatePastCertainDate,
-    extractHoursAndMinutes,
-    extractDayMonthYear,
     checkUserRole,
     addToBlacklist,
     isTokenRevoked,
+    isBookingDateValid,
+    isBookingTimeAvailable
 };
