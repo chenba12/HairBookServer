@@ -5,7 +5,6 @@ const REVIEWS_COLLECTION = 'Reviews';
 const BARBERSHOPS_COLLECTION = 'BarberShops';
 const SERVICES_COLLECTION = 'Services';
 const BOOKINGS_COLLECTION = 'Bookings';
-const BARBER_COLLECTION = 'Barbers';
 const REVOKED_TOKENS_COLLECTION = 'RevokedTokens';
 module.exports = {
     DATE_FORMAT,
@@ -15,6 +14,5 @@ module.exports = {
     BARBERSHOPS_COLLECTION,
     SERVICES_COLLECTION,
     BOOKINGS_COLLECTION,
-    BARBER_COLLECTION,
     REVOKED_TOKENS_COLLECTION
 }

@@ -1,13 +1,13 @@
 const express = require('express');
 const BookingDTO = require("../entities/Booking");
-const {db, isBookingTimeAvailable, isBookingDateValid} = require("../utils");
+const {db, isBookingTimeAvailable, isBookingDateValid, verifyAccessToken, checkUserRole} = require("../utils");
 const moment = require("moment");
 const {DATE_FORMAT, BARBERSHOPS_COLLECTION, BOOKING_COLLECTION} = require("../consts");
 const router = express.Router();
 const Message = require("../entities/Message");
 
 
-router.post(('/book-haircut'), async (req, res) => {
+router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
     try {
         const bookingData = new BookingDTO(req.body);
 
@@ -40,7 +40,7 @@ router.post(('/book-haircut'), async (req, res) => {
 });
 
 // barbershop id, book id, date
-router.put(('/update-booking'), async (req, res) => {
+router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
     try {
         const _user_id = req.query.user_id;
         const bookingId = req.query.booking_id;
@@ -73,7 +73,7 @@ router.put(('/update-booking'), async (req, res) => {
     }
 });
 // book id
-router.delete(('/delete-booking'), async (req, res) => {
+router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
     try {
         const _user_id = req.query.user_id;
         const bookingId = req.query.booking_id;
@@ -91,7 +91,7 @@ router.delete(('/delete-booking'), async (req, res) => {
     }
 });
 
-router.get('/user-bookings', async (req, res) => {
+router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
     try {
         const _user_id = req.query.user_id;
         console.log("hey")
@@ -116,7 +116,7 @@ router.get('/user-bookings', async (req, res) => {
 });
 
 
-router.get('/closest-booking', async (req, res) => {
+router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'),async (req, res) => {
     try {
         const _user_id = req.query.user_id;
         const now = moment().format(DATE_FORMAT);

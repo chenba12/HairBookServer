@@ -8,6 +8,7 @@ const jwt = require('jsonwebtoken');
 const moment = require("moment");
 const Message = require("./entities/Message");
 const {DATE_FORMAT, BOOKING_COLLECTION, REVOKED_TOKENS_COLLECTION, USERS_COLLECTION} = require("./consts");
+const User = require("./entities/User");
 
 admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
@@ -72,6 +73,7 @@ const checkUserRole = (expectedRole) => {
             next();
         } else {
             console.log('User role:', req.userRole);
+            console.log('Expected role:', expectedRole);
             return res.status(403).json(new Message('Access forbidden. Insufficient role.', null, 0));
         }
     };
@@ -98,7 +100,7 @@ const verifyAccessToken = async (req, res, next) => {
             req.userEmail = user.email;
             req.userToken = token;
             req.userId = userSnapshot.docs[0].id;
-            checkUserRole('Customer')(req, res, next);
+            checkUserRole(user.role)(req, res, next);
         } else {
             return res.status(401).json(new Message('User not found', null, 0));
         }
@@ -108,6 +110,21 @@ const verifyAccessToken = async (req, res, next) => {
     }
 }
 
+const getUserDetails = async (req, res, next, expectedRole) => {
+    try {
+        const userSnapshot = await db.collection(USERS_COLLECTION).doc(req.userId).get();
+        if (userSnapshot.exists) {
+            req.userDetails = new User(userSnapshot.data());
+            next();
+        } else {
+            res.status(404).json(new Message(`${expectedRole} details not found`, null, 0));
+        }
+    } catch (error) {
+        console.error(`Error in get-${expectedRole}-details:`, error);
+        res.status(500).json(new Message('Internal server error', null, 0));
+    }
+};
+
 async function isEmailUnique(email) {
     const querySnapshot = await db.collection(USERS_COLLECTION).where('email', '==', email).get();
     console.log('Query Snapshot:', querySnapshot.docs.map(doc => doc.data()));
@@ -115,7 +132,7 @@ async function isEmailUnique(email) {
 }
 
 const addToBlacklist = async (token) => {
-    await revokedTokensCollection.doc(token).set({ revoked: true });
+    await revokedTokensCollection.doc(token).set({revoked: true});
 };
 
 // Function to check if a token is in the blacklist
@@ -146,7 +163,10 @@ async function isBookingDateValid(date, barbershopData, res) {
         barbershopData.working_days[workingDayIndex] !== 1 ||
         !barbershopData.thursday_hours.includes(requestedTime)
     ) {
-        res.status(400).json(new Message('The barbershop is closed at the requested date/hour', {day:workingDayIndex+1,time:requestedTime}, 0));
+        res.status(400).json(new Message('The barbershop is closed at the requested date/hour', {
+            day: workingDayIndex + 1,
+            time: requestedTime
+        }, 0));
         return false;
     }
 
@@ -178,5 +198,6 @@ module.exports = {
     addToBlacklist,
     isTokenRevoked,
     isBookingDateValid,
-    isBookingTimeAvailable
+    isBookingTimeAvailable,
+    getUserDetails
 };

@@ -1,6 +1,5 @@
 class ReviewDTO {
-    constructor({booking_id, first_name, last_name ,review, rating, timestamp, _user_id, _barbershop_id}) {
-        this.booking_id = booking_id;
+    constructor({first_name, last_name ,review, rating, timestamp, _user_id, _barbershop_id}) {
         this.first_name = first_name
         this.last_name = last_name
         this.review = review

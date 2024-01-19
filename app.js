@@ -5,9 +5,9 @@ const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const indexRouter = require('./routes/index');
 const customerRouter = require('./routes/customer');
-const barbersRouter = require('./routes/barbers')
+const barbersRouter = require('./routes/barber')
 const authRouter = require('./routes/auth')
-const reviewsRouter = require('./routes/reviews')
+const reviewsRouter = require('./routes/review')
 const bookingRouter = require('./routes/booking')
 const {readdir, statSync} = require("fs");
 const {customLogger, deleteLogFile} = require("./utils");
@@ -29,9 +29,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(customLogger);
 app.use('/', indexRouter);
 app.use('/customer', customerRouter);
-app.use('/barbers', barbersRouter);
+app.use('/barber', barbersRouter);
 app.use('/auth', authRouter);
-app.use('/reviews', reviewsRouter);
+app.use('/review', reviewsRouter);
 app.use('/booking', bookingRouter);
 
 // Schedule log file deletion after 30 minutes

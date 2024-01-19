@@ -14,6 +14,7 @@ class BarberShopDTO {
                     reviews,
                     total_rating,
                     location,
+                    description,
                     _barber_id
                 }) {
         this.barbershop_name = barbershop_name
@@ -27,9 +28,9 @@ class BarberShopDTO {
         this.friday_hours = friday_hours
         this.saturday_hours = saturday_hours
         this.services = services
-        this.reviews = reviews
         this.toal_rating = total_rating
         this.location = location
+        this.description = description
         this._barber_id = _barber_id
     }
 }
