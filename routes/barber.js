@@ -8,9 +8,10 @@ const {
     BOOKING_COLLECTION,
     BARBERSHOPS_COLLECTION,
     REVIEWS_COLLECTION,
-    DATE_FORMAT
+    DATE_FORMAT, SERVICES_COLLECTION
 } = require("../consts");
 const moment = require("moment");
+const ServiceDTO = require("../entities/Service");
 
 router.get('/get-barber-details', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     await getUserDetails(req, res, () => {
@@ -247,6 +248,7 @@ router.delete('/delete-booking', verifyAccessToken, checkUserRole('Barber'), asy
     }
 });
 
+
 const checkBarbershopOwnership = async (barbershopId, barberId) => {
     try {
         if (!barbershopId) {
@@ -268,4 +270,84 @@ const checkBarbershopOwnership = async (barbershopId, barberId) => {
         return {isValid: false, message: 'Internal server error'};
     }
 };
+
+router.post('/create-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+    try {
+        const barberId = req.userId;
+        const barbershopId = req.query.barbershop_id;
+        const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
+        if (!ownershipCheck.isValid) {
+            return res.status(403).json(new Message(ownershipCheck.message, null, 0));
+        }
+        const serviceData = new ServiceDTO({
+            service_name: req.body.service_name,
+            price: req.body.price,
+            _barbershop_id: barbershopId,
+        });
+        const plainObject = {...serviceData};
+        const serviceDocRef = await db.collection(SERVICES_COLLECTION).add(plainObject);
+        const serviceId = serviceDocRef.id;
+        const servicePlainObject = { ...serviceData, "service_id": serviceId };
+        return res.status(200).json(new Message('Service created successfully', servicePlainObject, 1));
+    } catch (error) {
+        console.error('Error in create-service:', error);
+        return res.status(500).json(new Message('Internal server error', null, 0));
+    }
+});
+
+router.delete('/delete-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+    try {
+        const barberId = req.userId;
+        const barbershopId = req.query.barbershop_id;
+        const serviceId = req.query.service_id;
+        const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
+        if (!ownershipCheck.isValid) {
+            return res.status(403).json(new Message(ownershipCheck.message, null, 0));
+        }
+        await db.collection(SERVICES_COLLECTION).doc(serviceId).delete();
+        return res.status(200).json(new Message('Service deleted successfully', null, 1));
+    } catch (error) {
+        console.error('Error in delete-service:', error);
+        return res.status(500).json(new Message('Internal server error', null, 0));
+    }
+});
+
+router.put('/update-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+    try {
+        const barberId = req.userId;
+        const barbershopId = req.query.barbershop_id;
+        const serviceId = req.query.service_id;
+        const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
+        if (!ownershipCheck.isValid) {
+            return res.status(403).json(new Message(ownershipCheck.message, null, 0));
+        }
+        const updatedServiceData = new ServiceDTO(req.body);
+        const plainServiceObject = { ...updatedServiceData };
+        await db.collection(SERVICES_COLLECTION).doc(serviceId).update(plainServiceObject);
+        return res.status(200).json(new Message('Service updated successfully', plainServiceObject, 1));
+    } catch (error) {
+        console.error('Error in update-service:', error);
+        return res.status(500).json(new Message('Internal server error', null, 0));
+    }
+});
+
+router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+    try {
+        const barbershopId = req.query.barbershop_id;
+
+        const servicesSnapshot = await db.collection(SERVICES_COLLECTION)
+            .where('_barbershop_id', '==', barbershopId)
+            .get();
+
+        const services = servicesSnapshot.docs.map(doc => {
+            const serviceData = doc.data();
+            return { service_id: doc.id, ...serviceData };
+        });
+
+        return res.status(200).json(new Message('Services retrieved successfully', services, 1));
+    } catch (error) {
+        console.error('Error in get-services:', error);
+        return res.status(500).json(new Message('Internal server error', null, 0));
+    }
+});
 module.exports = router;
