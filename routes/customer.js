@@ -12,7 +12,7 @@ router.get('/get-all-shops', verifyAccessToken, checkUserRole('Customer'), async
         const allBarberShops = [];
         barberShops.forEach((barberDoc) => {
             const barberShopData = barberDoc.data();
-            barberShopData._barbershop_id = barberDoc.id;
+            barberShopData.barbershopId = barberDoc.id;
             allBarberShops.push(barberShopData);
         });
         res.status(200).json(new Message('All barber shops retrieved successfully', allBarberShops, 1));
@@ -23,15 +23,15 @@ router.get('/get-all-shops', verifyAccessToken, checkUserRole('Customer'), async
 });
 router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
 
         const servicesSnapshot = await db.collection(SERVICES_COLLECTION)
-            .where('_barbershop_id', '==', barbershopId)
+            .where('barbershopId', '==', barbershopId)
             .get();
 
         const services = servicesSnapshot.docs.map(doc => {
             const serviceData = doc.data();
-            return { service_id: doc.id, ...serviceData };
+            return { serviceId: doc.id, ...serviceData };
         });
 
         return res.status(200).json(new Message('Services retrieved successfully', services, 1));

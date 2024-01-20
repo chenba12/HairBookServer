@@ -9,18 +9,18 @@ const {BOOKING_COLLECTION, REVIEWS_COLLECTION} = require("../consts");
 router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const reviewData = new ReviewDTO(req.body);
-        const barbershopId = reviewData._barbershop_id;
+        const barbershopId = reviewData.barbershopId;
         const userId = req.userId;
         const existingReview = await db.collection(REVIEWS_COLLECTION)
-            .where('_user_id', '==', userId)
-            .where('_barbershop_id', '==', barbershopId)
+            .where('userId', '==', userId)
+            .where('barbershopId', '==', barbershopId)
             .get();
         if (!existingReview.empty) {
             return res.status(403).json(new Message('You have already posted a review for this barbershop', null, 0));
         }
         const pastBooking = await db.collection(BOOKING_COLLECTION)
-            .where('_user_id', '==', userId)
-            .where('_barbershop_id', '==', barbershopId)
+            .where('userId', '==', userId)
+            .where('barbershopId', '==', barbershopId)
             .where('date', '<', moment().format('DD-MM-YYYY HH:mm'))
             .orderBy('date', 'desc')
             .limit(1)
@@ -32,7 +32,7 @@ router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async 
         const plainObject = {...reviewData};
         const reviewRef = await db.collection(REVIEWS_COLLECTION).add(plainObject);
         const reviewId = reviewRef.id;
-        const plainReviewObject = { review_id: reviewId, ...reviewData };
+        const plainReviewObject = { reviewId: reviewId, ...reviewData };
         return res.status(200).json(new Message('Review posted successfully', plainReviewObject, 1));
     } catch (error) {
         console.error('Error in post_review:', error);
@@ -42,7 +42,7 @@ router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async 
 router.delete('/delete-review', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const userId = req.userId;
-        const reviewId = req.query.review_id;
+        const reviewId = req.query.reviewId;
         const isAuthorized = await checkReviewOwnership(userId, reviewId);
         if (isAuthorized) {
             await db.collection(REVIEWS_COLLECTION).doc(reviewId).delete();
@@ -78,7 +78,7 @@ router.get('/get-my-reviews', verifyAccessToken, checkUserRole('Customer'), asyn
     try {
         const userId = req.userId;
         const userReviewsSnapshot = await db.collection(REVIEWS_COLLECTION)
-            .where('_user_id', '==', userId)
+            .where('userId', '==', userId)
             .get();
 
         const userReviews = userReviewsSnapshot.docs.map(doc => {
@@ -97,7 +97,7 @@ const checkReviewOwnership = async (userId, reviewId) => {
     try {
         const reviewSnapshot = await db.collection(REVIEWS_COLLECTION).doc(reviewId).get();
         const reviewData = reviewSnapshot.data();
-        return userId === reviewData._user_id;
+        return userId === reviewData.userId;
     } catch (error) {
         console.error(error);
         return false;

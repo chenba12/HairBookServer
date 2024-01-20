@@ -10,7 +10,7 @@ const Message = require("../entities/Message");
 router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const bookingData = new BookingDTO(req.body);
-        const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(bookingData._barbershop_id).get();
+        const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(bookingData.barbershopId).get();
         const barbershopData = barbershopDoc.data();
         if (!barbershopData) {
             return res.status(404).json(new Message('Barbershop not found', null, 0));
@@ -18,13 +18,12 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), asy
         if (!await isBookingDateValid(bookingData.date, barbershopData, res)) {
             return;
         }
-        if (!await isBookingTimeAvailable(bookingData.date, bookingData._barbershop_id, null, res)) {
+        if (!await isBookingTimeAvailable(bookingData.date, bookingData.barbershopId, null, res)) {
             return;
         }
         const plainObject = {...bookingData};
         const bookingRef = await db.collection(BOOKING_COLLECTION).add(plainObject);
-        const bookingId = bookingRef.id;
-        const bookingPlainObject = {booking_id: bookingId, ...bookingData};
+        const bookingPlainObject = {bookingId: bookingRef.id, ...bookingData};
         res.status(200).json(new Message('Your booking has been sent!', bookingPlainObject, 1));
     } catch (error) {
         console.error(error);
@@ -34,10 +33,10 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), asy
 
 router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
-        const _user_id = req.query.user_id;
-        const bookingId = req.query.booking_id;
+        const _user_id = req.userId;
+        const bookingId = req.query.bookingId;
         const updatedBookingData = new BookingDTO(req.body);
-        if (_user_id === updatedBookingData._user_id) {
+        if (_user_id === updatedBookingData.userId) {
             const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(updatedBookingData._barbershop_id).get();
             const barbershopData = barbershopDoc.data();
             if (!barbershopData) {
@@ -66,11 +65,11 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), as
 });
 router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
-        const _user_id = req.query.user_id;
-        const bookingId = req.query.booking_id;
+        const _user_id = req.userId
+        const bookingId = req.query.bookingId;
         const bookingSnapshot = await db.collection(BOOKING_COLLECTION).doc(bookingId).get();
         const bookingData = bookingSnapshot.data();
-        if (bookingData && _user_id === bookingData._user_id) {
+        if (bookingData && _user_id === bookingData.userId) {
             await db.collection(BOOKING_COLLECTION).doc(bookingId).delete();
             res.status(200).json(new Message('Booking deleted successfully!', null, 1));
         } else {
@@ -86,7 +85,7 @@ router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'), async
     try {
         const _user_id = req.userId;
         const bookingSnapshot = await db.collection(BOOKING_COLLECTION)
-            .where('_user_id', '==', _user_id)
+            .where('userId', '==', _user_id)
             .orderBy('date')
             .get();
         if (bookingSnapshot.empty) {
@@ -111,7 +110,7 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), asy
         const _user_id = req.userId;
         const now = moment().format(DATE_FORMAT);
         const closestBookingSnapshot = await db.collection(BOOKING_COLLECTION)
-            .where('_user_id', '==', _user_id)
+            .where('userId', '==', _user_id)
             .where('date', '>=', now)
             .orderBy('date')
             .limit(1)

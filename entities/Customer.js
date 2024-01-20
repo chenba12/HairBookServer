@@ -1,9 +1,9 @@
 class CustomerDTO {
-    constructor({first_name, last_name, age, phone_number, my_booking, my_reviews}) {
-        this.first_name = first_name
-        this.last_name = last_name
+    constructor({firstName, lastName, age, phoneNumber}) {
+        this.firstName = firstName
+        this.lastName = lastName
         this.age = age
-        this.phone_number = phone_number
+        this.phoneNumber = phoneNumber
     }
 }
 

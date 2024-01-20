@@ -115,7 +115,7 @@ const getUserDetails = async (req, res, next, expectedRole) => {
         const userSnapshot = await db.collection(USERS_COLLECTION).doc(req.userId).get();
         if (userSnapshot.exists) {
             const userDetails = new User(userSnapshot.data());
-            userDetails._user_id = req.userId;
+            userDetails.userId = req.userId;
             req.userDetails = userDetails;
             next();
         } else {

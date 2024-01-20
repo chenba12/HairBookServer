@@ -25,7 +25,7 @@ router.post('/create-barbershop', verifyAccessToken, checkUserRole('Barber'), as
         const plainObject = {...data};
 
         const docRef = await (await db.collection(BARBERSHOPS_COLLECTION).add(plainObject)).get();
-        const responseData = {...plainObject, _id: docRef.id};
+        const responseData = {...plainObject, barbershopId: docRef.id};
         res.status(200).json(new Message('BarberShop created successfully', responseData, 1));
     } catch (error) {
         console.error(error);
@@ -36,15 +36,14 @@ router.get('/get-my-barbershops', verifyAccessToken, checkUserRole('Barber'), as
     try {
         const userId = req.userId;
         const barbershopsSnapshot = await db.collection(BARBERSHOPS_COLLECTION)
-            .where('_barber_id', '==', userId)
+            .where('barberId', '==', userId)
             .get();
         if (barbershopsSnapshot.empty) {
             return res.status(404).json(new Message('No barbershops found for the user', null, 0));
         }
-
         const barbershops = barbershopsSnapshot.docs.map(doc => {
             const barbershopData = doc.data();
-            return {...barbershopData, _id: doc.id};
+            return {...barbershopData, barbershopId: doc.id};
         });
         return res.status(200).json(new Message('Barbershops retrieved successfully', barbershops, 1));
     } catch (error) {
@@ -54,7 +53,7 @@ router.get('/get-my-barbershops', verifyAccessToken, checkUserRole('Barber'), as
 });
 router.get('/get-barbershop-by-id', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
         const barberId = req.userId;
         if (!barbershopId || !barberId) {
             return res.status(400).json(new Message('Please provide valid barbershop and barber IDs', null, 0));
@@ -70,13 +69,13 @@ router.get('/get-barbershop-by-id', verifyAccessToken, checkUserRole('Barber'), 
         const barbershopData = barbershopDoc.data();
         return res.status(200).json(new Message('Barbershop retrieved successfully', barbershopData, 1));
     } catch (error) {
-        console.error('Error in get_barbershop_by_id:', error);
+        console.error('Error in barbershop:', error);
         return res.status(500).json(new Message('Internal server error', null, 0));
     }
 });
 router.delete('/delete-barbershop', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
         const barberId = req.userId;
 
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
@@ -92,34 +91,34 @@ router.delete('/delete-barbershop', verifyAccessToken, checkUserRole('Barber'), 
 });
 router.put('/update-barbershop', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
         const barberId = req.userId;
         if (!barbershopId || !barberId) {
-            return res.status(400).json(new Message('Please provide valid barbershop and barber IDs', null, 0));
+            res.status(400).json(new Message('Please provide valid barbershop and barber IDs', null, 0));
         }
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
         if (!ownershipCheck.isValid) {
-            return res.status(403).json(new Message(ownershipCheck.message, null, 0));
+            res.status(403).json(new Message(ownershipCheck.message, null, 0));
         }
         const updatedData = req.body;
         await db.collection(BARBERSHOPS_COLLECTION).doc(barbershopId).update(updatedData);
-        return res.status(200).json(new Message('Barbershop updated successfully', updatedData, 1));
+        res.status(200).json(new Message('Barbershop updated successfully', updatedData, 1));
     } catch (error) {
         console.error('Error in update_barbershop:', error);
-        return res.status(500).json(new Message('Internal server error', null, 0));
+        res.status(500).json(new Message('Internal server error', null, 0));
     }
 });
 
 router.get('/get-reviews', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
         const barberId = req.userId;
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
         if (!ownershipCheck.isValid) {
             return res.status(403).json(new Message(ownershipCheck.message, null, 0));
         }
         const reviewsSnapshot = await db.collection(REVIEWS_COLLECTION)
-            .where('_barbershop_id', '==', barbershopId)
+            .where('barbershopId', '==', barbershopId)
             .get();
         const barbershopReviews = reviewsSnapshot.docs.map(doc => {
             const reviewData = doc.data();
@@ -136,7 +135,7 @@ router.get('/get-closest-booking', verifyAccessToken, checkUserRole('Barber'), a
     try {
         const barberId = req.userId;
         const barbershopsSnapshot = await db.collection(BARBERSHOPS_COLLECTION)
-            .where('_barber_id', '==', barberId)
+            .where('barberId', '==', barberId)
             .get();
 
         if (barbershopsSnapshot.empty) {
@@ -156,7 +155,7 @@ router.get('/get-closest-booking', verifyAccessToken, checkUserRole('Barber'), a
             }
 
             const currentBookingSnapshot = await db.collection(BOOKING_COLLECTION)
-                .where('_barbershop_id', '==', barbershopId)
+                .where('barbershopId', '==', barbershopId)
                 .where('date', '>=', moment().format(DATE_FORMAT))
                 .orderBy('date')
                 .limit(1)
@@ -179,8 +178,8 @@ router.get('/get-closest-booking', verifyAccessToken, checkUserRole('Barber'), a
         }
 
         const closestBookingWithId = Object.assign({}, {
-            "barbershop_id": closestBarbershopId,
-            "booking_id": upcomingBookingSnapshot.docs[0].id
+            "barbershopId": closestBarbershopId,
+            "bookingId": upcomingBookingSnapshot.docs[0].id
         }, closestBooking);
         return res.status(200).json(new Message('Closest upcoming booking retrieved successfully', closestBookingWithId, 1));
     } catch (error) {
@@ -193,7 +192,7 @@ router.get('/get-closest-booking', verifyAccessToken, checkUserRole('Barber'), a
 router.get('/my-bookings', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
         const barberId = req.userId;
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
 
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
         if (!ownershipCheck.isValid) {
@@ -201,7 +200,7 @@ router.get('/my-bookings', verifyAccessToken, checkUserRole('Barber'), async (re
         }
 
         const bookingSnapshot = await db.collection(BOOKING_COLLECTION)
-            .where("_barbershop_id", "==", barbershopId)
+            .where("barbershopId", "==", barbershopId)
             .get();
 
         if (bookingSnapshot.empty) {
@@ -217,7 +216,7 @@ router.get('/my-bookings', verifyAccessToken, checkUserRole('Barber'), async (re
 
             if (bookingDate.isAfter(currentDateTime)) {
                 const booking = new BookingDTO(bookingData);
-                bookings.push(Object.assign({}, {"id": doc.id}, booking));
+                bookings.push(Object.assign({}, {"bookingId": doc.id}, booking));
             }
         });
 
@@ -231,8 +230,8 @@ router.get('/my-bookings', verifyAccessToken, checkUserRole('Barber'), async (re
 router.delete('/delete-booking', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
         const barberId = req.userId;
-        const barbershopId = req.query.barbershop_id;
-        const bookingId = req.query.booking_id;
+        const barbershopId = req.query.barbershopId;
+        const bookingId = req.query.bookingId;
 
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
         if (!ownershipCheck.isValid) {
@@ -260,7 +259,7 @@ const checkBarbershopOwnership = async (barbershopId, barberId) => {
         }
         const barbershopData = barbershopDoc.data();
         // Check if the barbershop belongs to the specified barber
-        if (barbershopData._barber_id !== barberId) {
+        if (barbershopData.barberId !== barberId) {
             return {isValid: false, message: 'Barbershop does not belong to the specified barber'};
         }
 
@@ -274,20 +273,20 @@ const checkBarbershopOwnership = async (barbershopId, barberId) => {
 router.post('/create-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
         const barberId = req.userId;
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
         if (!ownershipCheck.isValid) {
             return res.status(403).json(new Message(ownershipCheck.message, null, 0));
         }
         const serviceData = new ServiceDTO({
-            service_name: req.body.service_name,
+            serviceName: req.body.serviceName,
             price: req.body.price,
-            _barbershop_id: barbershopId,
+            barbershopId: barbershopId,
         });
         const plainObject = {...serviceData};
         const serviceDocRef = await db.collection(SERVICES_COLLECTION).add(plainObject);
         const serviceId = serviceDocRef.id;
-        const servicePlainObject = { ...serviceData, "service_id": serviceId };
+        const servicePlainObject = {...serviceData, "serviceId": serviceId};
         return res.status(200).json(new Message('Service created successfully', servicePlainObject, 1));
     } catch (error) {
         console.error('Error in create-service:', error);
@@ -298,8 +297,8 @@ router.post('/create-service', verifyAccessToken, checkUserRole('Barber'), async
 router.delete('/delete-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
         const barberId = req.userId;
-        const barbershopId = req.query.barbershop_id;
-        const serviceId = req.query.service_id;
+        const barbershopId = req.query.barbershopId;
+        const serviceId = req.query.serviceId;
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
         if (!ownershipCheck.isValid) {
             return res.status(403).json(new Message(ownershipCheck.message, null, 0));
@@ -315,14 +314,14 @@ router.delete('/delete-service', verifyAccessToken, checkUserRole('Barber'), asy
 router.put('/update-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
         const barberId = req.userId;
-        const barbershopId = req.query.barbershop_id;
-        const serviceId = req.query.service_id;
+        const barbershopId = req.query.barbershopId;
+        const serviceId = req.query.serviceId;
         const ownershipCheck = await checkBarbershopOwnership(barbershopId, barberId);
         if (!ownershipCheck.isValid) {
             return res.status(403).json(new Message(ownershipCheck.message, null, 0));
         }
         const updatedServiceData = new ServiceDTO(req.body);
-        const plainServiceObject = { ...updatedServiceData };
+        const plainServiceObject = {...updatedServiceData};
         await db.collection(SERVICES_COLLECTION).doc(serviceId).update(plainServiceObject);
         return res.status(200).json(new Message('Service updated successfully', plainServiceObject, 1));
     } catch (error) {
@@ -333,15 +332,15 @@ router.put('/update-service', verifyAccessToken, checkUserRole('Barber'), async 
 
 router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
-        const barbershopId = req.query.barbershop_id;
+        const barbershopId = req.query.barbershopId;
 
         const servicesSnapshot = await db.collection(SERVICES_COLLECTION)
-            .where('_barbershop_id', '==', barbershopId)
+            .where('barbershopId', '==', barbershopId)
             .get();
 
         const services = servicesSnapshot.docs.map(doc => {
             const serviceData = doc.data();
-            return { service_id: doc.id, ...serviceData };
+            return {serviceId: doc.id, ...serviceData};
         });
 
         return res.status(200).json(new Message('Services retrieved successfully', services, 1));
