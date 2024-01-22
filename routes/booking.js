@@ -4,7 +4,6 @@ const {db, isBookingTimeAvailable, isBookingDateValid, verifyAccessToken, checkU
 const moment = require("moment");
 const {DATE_FORMAT, BARBERSHOPS_COLLECTION, BOOKING_COLLECTION, REVIEWS_COLLECTION} = require("../consts");
 const router = express.Router();
-const Message = require("../entities/Message");
 
 
 router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
@@ -13,7 +12,7 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), asy
         const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(bookingData.barbershopId).get();
         const barbershopData = barbershopDoc.data();
         if (!barbershopData) {
-            return res.status(404).json(new Message('Barbershop not found', null, 0));
+            return res.status(404).json('Barbershop not found');
         }
         if (!await isBookingDateValid(bookingData.date, barbershopData, res)) {
             return;
@@ -24,10 +23,10 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), asy
         const plainObject = {...bookingData};
         const bookingRef = await db.collection(BOOKING_COLLECTION).add(plainObject);
         const bookingPlainObject = {bookingId: bookingRef.id, ...bookingData};
-        res.status(200).json(new Message('Your booking has been sent!', bookingPlainObject, 1));
+        res.status(200).json(bookingPlainObject);
     } catch (error) {
         console.error(error);
-        res.status(400).json(new Message('Invalid data format', null, 0));
+        res.status(400).json('Invalid data format');
     }
 });
 
@@ -40,7 +39,7 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), as
             const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(updatedBookingData._barbershop_id).get();
             const barbershopData = barbershopDoc.data();
             if (!barbershopData) {
-                return res.status(404).json(new Message('Barbershop not found', null, 0));
+                return res.status(404).json('Barbershop not found');
             }
             if (!await isBookingDateValid(updatedBookingData.date, barbershopData, res)) {
                 return;
@@ -53,14 +52,14 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), as
             const updatedBookingSnapshot = await db.collection(BOOKING_COLLECTION).doc(bookingId).get();
             const updatedBooking = new BookingDTO(updatedBookingSnapshot.data());
 
-            res.status(200).json(new Message('Booking updated successfully!', updatedBooking, 1));
+            res.status(200).json(updatedBooking)
         } else {
             // Unauthorized access
-            res.status(401).json(new Message('Unauthorized access to update this booking', null, 0));
+            res.status(401).json('Unauthorized access to update this booking');
         }
     } catch (error) {
         console.error(error);
-        res.status(400).json(new Message('Invalid data format or booking not found', null, 0));
+        res.status(400).json('Invalid data format or booking not found');
     }
 });
 router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
@@ -71,13 +70,13 @@ router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'),
         const bookingData = bookingSnapshot.data();
         if (bookingData && _user_id === bookingData.userId) {
             await db.collection(BOOKING_COLLECTION).doc(bookingId).delete();
-            res.status(200).json(new Message('Booking deleted successfully!', null, 1));
+            res.status(200).json('Booking deleted successfully!')
         } else {
-            res.status(401).json(new Message('Unauthorized access or booking not found', null, 0));
+            res.status(401).json('Unauthorized access or booking not found');
         }
     } catch (error) {
         console.error(error);
-        res.status(400).json(new Message('Invalid data format or booking not found', null, 0));
+        res.status(400).json('Invalid data format or booking not found');
     }
 });
 
@@ -89,7 +88,7 @@ router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'), async
             .orderBy('date')
             .get();
         if (bookingSnapshot.empty) {
-            return res.status(404).json(new Message('No bookings found for the user', null, 0));
+            return res.status(404).json('No bookings found for the user');
         }
         const bookings = [];
         for (const doc of bookingSnapshot.docs) {
@@ -97,10 +96,10 @@ router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'), async
             const bookingWithId = Object.assign({}, {"booking_id": doc.id}, booking);
             bookings.push(bookingWithId);
         }
-        return res.status(200).json(new Message('User bookings retrieved successfully', bookings, 1));
+        return res.status(200).json(bookings)
     } catch (error) {
         console.error(error);
-        return res.status(500).json(new Message('Internal server error', null, 0));
+        return res.status(500).json('Internal server error');
     }
 });
 
@@ -116,16 +115,16 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), asy
             .limit(1)
             .get();
         if (closestBookingSnapshot.empty) {
-            return res.status(404).json(new Message('No upcoming bookings found for the user', null, 0));
+            return res.status(404).json('No upcoming bookings found for the user');
         }
         const closestBookingDoc = closestBookingSnapshot.docs[0];
         const closestBookingData = closestBookingDoc.data();
         const closestBooking = new BookingDTO(closestBookingData);
         const closestBookingWithId = Object.assign({}, {"booking_id": closestBookingDoc.id}, closestBooking);
-        return res.status(200).json(new Message('Closest upcoming booking retrieved successfully', closestBookingWithId, 1));
+        return res.status(200).json(closestBookingWithId)
     } catch (error) {
         console.error(error);
-        return res.status(500).json(new Message('Internal server error', null, 0));
+        return res.status(500).json('Internal server error');
     }
 });
 

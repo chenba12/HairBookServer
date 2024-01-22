@@ -6,7 +6,6 @@ const {getFirestore} = require("firebase-admin/firestore");
 const path = require("path");
 const jwt = require('jsonwebtoken');
 const moment = require("moment");
-const Message = require("./entities/Message");
 const {DATE_FORMAT, BOOKING_COLLECTION, REVOKED_TOKENS_COLLECTION, USERS_COLLECTION} = require("./consts");
 const User = require("./entities/User");
 

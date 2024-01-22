@@ -1,6 +1,7 @@
 class BarberShopDTO {
     constructor({
                     barbershopName,
+                    barberName,
                     phoneNumber,
                     workingDays,
                     sundayHours,
@@ -16,6 +17,7 @@ class BarberShopDTO {
                     barberId
                 }) {
         this.barbershopName = barbershopName
+        this.barberName = barberName
         this.phoneNumber = phoneNumber
         this.workingDays = workingDays
         this.sundayHours = sundayHours
@@ -25,7 +27,7 @@ class BarberShopDTO {
         this.thursdayHours = thursdayHours
         this.fridayHours = fridayHours
         this.saturdayHours = saturdayHours
-        this.toalRating = totalRating
+        this.totalRating = totalRating
         this.location = location
         this.description = description
         this.barberId = barberId
