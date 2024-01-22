@@ -23,7 +23,10 @@ router.post('/login', async (req, res) => {
             const passwordMatch = await bcrypt.compare(password, hashedPassword);
             if (passwordMatch) {
                 const accessToken = jwt.sign({email: user.email, role: user.role}, process.env.ACCESS_TOKEN_SECRET);
-                res.json(new Message("Authentication successfully", {user: user, accessToken: accessToken}, 1));
+                const fullUser = {...user, userId: userSnapshot.docs[0].id, accessToken: accessToken};
+                res.json(new Message("Authentication successfully", {
+                    ...fullUser,
+                }, 1));
             } else {
                 res.status(401).json(new Message("Authentication failed. Invalid email or password.", null, 0));
             }
