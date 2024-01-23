@@ -28,7 +28,6 @@ const deleteLogFile = (filePath) => {
 };
 
 const customLogger = (req, res, next) => {
-    // Get request details
     const startTimestamp = new Date();
     const method = req.method;
     const url = req.originalUrl || req.url;
@@ -36,18 +35,12 @@ const customLogger = (req, res, next) => {
     const headers = req.headers;
     const body = req.body;
     const logData = `[${startTimestamp.toLocaleTimeString()}] [Request] ${method} ${url}\nQuery Parameters: ${JSON.stringify(queryParams)}\nHeaders: ${JSON.stringify(headers)}\nRequest Body: ${JSON.stringify(body)}\n\n`;
-
-    // Override res.send to capture response data
     const originalSend = res.send;
     res.send = function (responseBody) {
         const endTimestamp = new Date();
         const timeTaken = endTimestamp - startTimestamp;
-
-        // Append response log to the existing log file
         const responseLogData = `\n[${endTimestamp.toLocaleTimeString()}] [Response] ${method} ${url}\nResponse Body: ${JSON.stringify(responseBody)}\nStatus: ${res.statusCode} \n\nTime taken: ${timeTaken}ms\n\n`;
         const logFileName = `combined_log_${startTimestamp.getTime()}.txt`; // Use the start timestamp for the log file name
-
-        // Save the combined log to a file
         const logFilePath = path.join(__dirname, 'logs', logFileName);
         appendFile(logFilePath, logData + responseLogData, (err) => {
             if (err) {
@@ -55,25 +48,22 @@ const customLogger = (req, res, next) => {
             }
         });
 
-        // Call the original res.send
         originalSend.apply(res, arguments);
     };
-
-    // Continue to the next middleware
     next();
 };
 
 const checkUserRole = (expectedRole) => {
     return (req, res, next) => {
         if (!req.userRole) {
-            return res.status(401).json(new Message('User role not available', null, 0));
+            return res.status(401).json('User role not available');
         }
         if (req.userRole === expectedRole) {
             next();
         } else {
             console.log('User role:', req.userRole);
             console.log('Expected role:', expectedRole);
-            return res.status(403).json(new Message('Access forbidden. Insufficient role.', null, 0));
+            return res.status(403).json('Access forbidden. Insufficient role.');
         }
     };
 };
@@ -81,15 +71,15 @@ const verifyAccessToken = async (req, res, next) => {
     try {
         const authorizationHeader = req.headers.authorization;
         if (!authorizationHeader) {
-            return res.status(401).json(new Message('Access token not provided', null, 0));
+            return res.status(401).json('Access token not provided');
         }
         const token = authorizationHeader.split(' ')[1];
         if (!token) {
-            return res.status(401).json(new Message('Invalid access token format', null, 0));
+            return res.status(401).json('Invalid access token format');
         }
         const isRevoked = await isTokenRevoked(token);
         if (isRevoked) {
-            return res.status(401).json(new Message('Access token revoked. Please sign in again.', null, 0));
+            return res.status(401).json('Access token revoked. Please sign in again.');
         }
         const decoded = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
         const userSnapshot = await db.collection(USERS_COLLECTION).where('email', '==', decoded.email).get();
@@ -101,11 +91,11 @@ const verifyAccessToken = async (req, res, next) => {
             req.userId = userSnapshot.docs[0].id;
             checkUserRole(user.role)(req, res, next);
         } else {
-            return res.status(401).json(new Message('User not found', null, 0));
+            return res.status(401).json('User not found');
         }
     } catch (error) {
         console.error('Error in verifyAccessToken:', error);
-        return res.status(401).json(new Message('Invalid access token', null, 0));
+        return res.status(401).json('Invalid access token');
     }
 }
 
@@ -118,11 +108,11 @@ const getUserDetails = async (req, res, next, expectedRole) => {
             req.userDetails = userDetails;
             next();
         } else {
-            res.status(404).json(new Message(`${expectedRole} details not found`, null, 0));
+            res.status(404).json(`${expectedRole} details not found`);
         }
     } catch (error) {
         console.error(`Error in get-${expectedRole}-details:`, error);
-        res.status(500).json(new Message('Internal server error', null, 0));
+        res.status(500).json('Internal server error');
     }
 };
 
@@ -147,7 +137,7 @@ async function isBookingDateValid(date, barbershopData, res) {
     const requestedDate = moment(date, DATE_FORMAT);
 
     if (requestedDate.isBefore(currentDate)) {
-        res.status(400).json(new Message('Cannot book or update to a past date', requestedDate, 0));
+        res.status(400).json(`Cannot book or update to a past date ${requestedDate}`)
         return false;
     }
 
@@ -164,10 +154,10 @@ async function isBookingDateValid(date, barbershopData, res) {
         barbershopData.working_days[workingDayIndex] !== 1 ||
         !barbershopData.thursday_hours.includes(requestedTime)
     ) {
-        res.status(400).json(new Message('The barbershop is closed at the requested date/hour', {
+        res.status(400).json('The barbershop is closed at the requested date/hour', {
             day: workingDayIndex + 1,
             time: requestedTime
-        }, 0));
+        });
         return false;
     }
 
@@ -181,7 +171,7 @@ async function isBookingTimeAvailable(date, barbershopId, bookingId, res) {
         .where('date', '==', requestedDate.format(DATE_FORMAT))
         .get();
     if (!existingBooking.empty) {
-        res.status(400).json(new Message('Another booking exists at the same time and date', null, 0));
+        res.status(400).json('Another booking exists at the same time and date');
         return false;
     }
 
