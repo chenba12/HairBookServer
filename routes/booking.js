@@ -120,8 +120,8 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), asy
         const closestBookingDoc = closestBookingSnapshot.docs[0];
         const closestBookingData = closestBookingDoc.data();
         const closestBooking = new BookingDTO(closestBookingData);
-        const closestBookingWithId = Object.assign({}, {"booking_id": closestBookingDoc.id}, closestBooking);
-        return res.status(200).json(closestBookingWithId)
+        const bookingId = closestBookingDoc.id;
+        return res.status(200).json({bookingId, ...closestBooking})
     } catch (error) {
         console.error(error);
         return res.status(500).json('Internal server error');

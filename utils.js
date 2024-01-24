@@ -143,17 +143,15 @@ async function isBookingDateValid(date, barbershopData, res) {
 
     const workingDayIndex = requestedDate.day();
     let requestedTime;
-
+    const days = ['sundayHours', 'mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours'];
+    const requestedDayHours = days[workingDayIndex];
     if (requestedDate.minutes() === 0) {
         requestedTime = `${requestedDate.hours()}:00`;
     } else {
         requestedTime = `${requestedDate.hours()}:${requestedDate.minutes()}`;
     }
 
-    if (
-        barbershopData.working_days[workingDayIndex] !== 1 ||
-        !barbershopData.thursday_hours.includes(requestedTime)
-    ) {
+    if (barbershopData.workingDays[workingDayIndex] !== 1 || !barbershopData[requestedDayHours].includes(requestedTime)) {
         res.status(400).json('The barbershop is closed at the requested date/hour', {
             day: workingDayIndex + 1,
             time: requestedTime
@@ -167,7 +165,7 @@ async function isBookingDateValid(date, barbershopData, res) {
 async function isBookingTimeAvailable(date, barbershopId, bookingId, res) {
     const requestedDate = moment(date, DATE_FORMAT);
     const existingBooking = await db.collection(BOOKING_COLLECTION)
-        .where('_barbershop_id', '==', barbershopId)
+        .where('barbershopId', '==', barbershopId)
         .where('date', '==', requestedDate.format(DATE_FORMAT))
         .get();
     if (!existingBooking.empty) {

@@ -77,13 +77,13 @@ router.post('/sign-up', async (req, res) => {
             detailsObject = new CustomerDTO(details);
             detailsCollection = 'CustomerDetails';
         }
-        const access_token = jwt.sign({email: data.email, role: data.role}, process.env.ACCESS_TOKEN_SECRET);
+        const accessToken = jwt.sign({email: data.email, role: data.role}, process.env.ACCESS_TOKEN_SECRET);
         data.password = await bcrypt.hash(data.password, 10);
         const emailExists = await isEmailUnique(data.email);
         if (emailExists) {
             const userDocRef = await (await db.collection(USERS_COLLECTION).add({...data})).get();
             await db.collection(detailsCollection).doc(userDocRef.id).set({...detailsObject});
-            res.json({...data, access_token});
+            res.json({...data, accessToken});
         } else {
             res.status(400).json("Email already exists.");
         }

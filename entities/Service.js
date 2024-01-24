@@ -1,9 +1,8 @@
 class ServiceDTO {
-    constructor({serviceName, price, duration, barbershopId}) {
+    constructor({serviceName, price, duration}) {
         this.serviceName = serviceName
         this.price = price
         this.duration = duration
-        this.barbershopId = barbershopId
     }
 }
 
