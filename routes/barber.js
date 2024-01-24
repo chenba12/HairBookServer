@@ -20,8 +20,10 @@ router.get('/get-barber-details', verifyAccessToken, checkUserRole('Barber'), as
 
 router.post('/create-barbershop', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
+        req.body.barberId = req.userId;
         const data = new BarberShopDTO(req.body)
         console.log(data)
+
         const plainObject = {...data};
         const docRef = await (await db.collection(BARBERSHOPS_COLLECTION).add(plainObject)).get();
         const responseData = {...plainObject, barbershopId: docRef.id};
