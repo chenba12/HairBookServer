@@ -8,8 +8,19 @@ const router = express.Router();
 
 router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
-        const bookingData = new BookingDTO(req.body);
-        const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(bookingData.barbershopId).get();
+        const barberShopId = req.body.barberShopId;
+        const bookingData = new BookingDTO(
+            {
+                userId: req.userId,
+                barberShopId: barberShopId,
+                barberShopName: req.body.barberShopName,
+                barberName: req.body.barberName,
+                customerName: req.body.customerName,
+                service: req.body.service,
+                date: req.body.date
+            }
+        );
+        const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).get();
         const barbershopData = barbershopDoc.data();
         if (!barbershopData) {
             return res.status(404).json('Barbershop not found');
@@ -17,7 +28,7 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), asy
         if (!await isBookingDateValid(bookingData.date, barbershopData, res)) {
             return;
         }
-        if (!await isBookingTimeAvailable(bookingData.date, bookingData.barbershopId, null, res)) {
+        if (!await isBookingTimeAvailable(bookingData.date, bookingData.barberShopId, null, res)) {
             return;
         }
         const plainObject = {...bookingData};

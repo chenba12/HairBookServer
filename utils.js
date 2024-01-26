@@ -134,6 +134,7 @@ const isTokenRevoked = async (token) => {
 
 async function isBookingDateValid(date, barbershopData, res) {
     const currentDate = moment();
+    console.log(date)
     const requestedDate = moment(date, DATE_FORMAT);
 
     if (requestedDate.isBefore(currentDate)) {
@@ -146,47 +147,48 @@ async function isBookingDateValid(date, barbershopData, res) {
     const days = ['sundayHours', 'mondayHours', 'tuesdayHours', 'wednesdayHours', 'thursdayHours', 'fridayHours', 'saturdayHours'];
     const requestedDayHours = days[workingDayIndex];
     if (requestedDate.minutes() === 0) {
-        requestedTime = `${requestedDate.hours()}:00`;
+        requestedTime = `${requestedDate.format('HH')}:00`;
     } else {
-        requestedTime = `${requestedDate.hours()}:${requestedDate.minutes()}`;
+        requestedTime = `${requestedDate.format('HH')}:${requestedDate.minutes()}`;
     }
 
+    console.log(barbershopData.workingDays[workingDayIndex] !== 1)
+    console.log(!barbershopData[requestedDayHours].includes(requestedTime))
+    console.log(requestedTime)
+
+    console.log(barbershopData[requestedDayHours])
     if (barbershopData.workingDays[workingDayIndex] !== 1 || !barbershopData[requestedDayHours].includes(requestedTime)) {
-        res.status(400).json('The barbershop is closed at the requested date/hour', {
-            day: workingDayIndex + 1,
-            time: requestedTime
-        });
+        res.status(401).json('The barbershop is closed at the requested date/hour');
         return false;
     }
-
-    return true;
-}
-
-async function isBookingTimeAvailable(date, barbershopId, bookingId, res) {
-    const requestedDate = moment(date, DATE_FORMAT);
-    const existingBooking = await db.collection(BOOKING_COLLECTION)
-        .where('barbershopId', '==', barbershopId)
-        .where('date', '==', requestedDate.format(DATE_FORMAT))
-        .get();
-    if (!existingBooking.empty) {
-        res.status(400).json('Another booking exists at the same time and date');
-        return false;
+        return true;
     }
 
-    return true;
-}
+    async function isBookingTimeAvailable(date, barberShopId, bookingId, res) {
+        const requestedDate = moment(date, DATE_FORMAT);
+        const existingBooking = await db.collection(BOOKING_COLLECTION)
+            .where('barberShopId', '==', barberShopId)
+            .where('date', '==', requestedDate.format(DATE_FORMAT))
+            .get();
+        if (!existingBooking.empty) {
+            res.status(400).json('Another booking exists at the same time and date');
+            return false;
+        }
 
-module.exports = {
-    admin,
-    db,
-    deleteLogFile,
-    customLogger,
-    verifyAccessToken,
-    isEmailUnique,
-    checkUserRole,
-    addToBlacklist,
-    isTokenRevoked,
-    isBookingDateValid,
-    isBookingTimeAvailable,
-    getUserDetails
-};
+        return true;
+    }
+
+    module.exports = {
+        admin,
+        db,
+        deleteLogFile,
+        customLogger,
+        verifyAccessToken,
+        isEmailUnique,
+        checkUserRole,
+        addToBlacklist,
+        isTokenRevoked,
+        isBookingDateValid,
+        isBookingTimeAvailable,
+        getUserDetails
+    };
