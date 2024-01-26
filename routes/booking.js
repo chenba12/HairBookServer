@@ -93,9 +93,9 @@ router.delete(('/delete-booking'), verifyAccessToken, checkUserRole('Customer'),
 
 router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
-        const _user_id = req.userId;
+        const userId = req.userId;
         const bookingSnapshot = await db.collection(BOOKING_COLLECTION)
-            .where('userId', '==', _user_id)
+            .where('userId', '==', userId)
             .orderBy('date')
             .get();
         if (bookingSnapshot.empty) {
@@ -104,7 +104,7 @@ router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'), async
         const bookings = [];
         for (const doc of bookingSnapshot.docs) {
             const booking = new BookingDTO(doc.data());
-            const bookingWithId = Object.assign({}, {"booking_id": doc.id}, booking);
+            const bookingWithId = Object.assign({}, {"bookingId": doc.id}, booking);
             bookings.push(bookingWithId);
         }
         return res.status(200).json(bookings)
