@@ -11,7 +11,7 @@ router.get('/get-all-shops', verifyAccessToken, checkUserRole('Customer'), async
         const allBarberShops = [];
         barberShops.forEach((barberDoc) => {
             const barberShopData = barberDoc.data();
-            barberShopData.barbershopId = barberDoc.id;
+            barberShopData.barberShopId = barberDoc.id;
             allBarberShops.push(barberShopData);
         });
         res.status(200).json(allBarberShops);
@@ -22,10 +22,10 @@ router.get('/get-all-shops', verifyAccessToken, checkUserRole('Customer'), async
 });
 router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
     try {
-        const barbershopId = req.query.barbershopId;
+        const barberShopId = req.query.barberShopId;
 
         const servicesSnapshot = await db.collection(SERVICES_COLLECTION)
-            .where('barbershopId', '==', barbershopId)
+            .where('barberShopId', '==', barberShopId)
             .get();
 
         const services = servicesSnapshot.docs.map(doc => {
@@ -37,6 +37,23 @@ router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (r
     } catch (error) {
         console.error('Error in get-services:', error);
         return res.status(500).json('Internal server error');
+    }
+});
+
+router.get('/get-shop_by_id', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
+    try {
+        const barberShopId = req.query.barberShopId;
+        const barberShopSnapshot = await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).get();
+        if (barberShopSnapshot.exists) {
+            const barberShopData = barberShopSnapshot.data();
+            barberShopData.barberShopId = barberShopSnapshot.id;
+            res.status(200).json(barberShopData);
+        } else {
+            res.status(404).json('Barber shop not found');
+        }
+    } catch (error) {
+        console.error('Error in get-shop_by_id:', error);
+        res.status(500).json('Internal server error');
     }
 });
 

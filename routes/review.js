@@ -8,18 +8,18 @@ const {BOOKING_COLLECTION, REVIEWS_COLLECTION} = require("../consts");
 router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const reviewData = new ReviewDTO(req.body);
-        const barbershopId = reviewData.barbershopId;
+        const barberShopId = reviewData.barberShopId;
         const userId = req.userId;
         const existingReview = await db.collection(REVIEWS_COLLECTION)
             .where('userId', '==', userId)
-            .where('barbershopId', '==', barbershopId)
+            .where('barberShopId', '==', barberShopId)
             .get();
         if (!existingReview.empty) {
             return res.status(403).json('You have already posted a review for this barbershop');
         }
         const pastBooking = await db.collection(BOOKING_COLLECTION)
             .where('userId', '==', userId)
-            .where('barbershopId', '==', barbershopId)
+            .where('barberShopId', '==', barberShopId)
             .where('date', '<', moment().format('DD-MM-YYYY HH:mm'))
             .orderBy('date', 'desc')
             .limit(1)

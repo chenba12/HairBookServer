@@ -109,7 +109,7 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), asy
         const _user_id = req.userId;
         const now = moment().format(DATE_FORMAT);
         const closestBookingSnapshot = await db.collection(BOOKING_COLLECTION)
-            .where('userId', '==', _user_id)
+            .where('userId', '==', userid)
             .where('date', '>=', now)
             .orderBy('date')
             .limit(1)
