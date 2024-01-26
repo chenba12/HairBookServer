@@ -1,12 +1,12 @@
 class ReviewDTO {
-    constructor({firstName, lastName, review, rating, timestamp, userId, barbershopId}) {
+    constructor({firstName, lastName, review, rating, timestamp, userId, barberShopId}) {
         this.firstName = firstName
         this.lastName = lastName
         this.review = review
         this.rating = rating
         this.timestamp = timestamp
         this.userId = userId
-        this.barbershopId = barbershopId
+        this.barberShopId = barberShopId
     }
 }
 
