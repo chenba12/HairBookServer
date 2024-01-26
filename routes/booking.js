@@ -2,7 +2,13 @@ const express = require('express');
 const BookingDTO = require("../entities/Booking");
 const {db, isBookingTimeAvailable, isBookingDateValid, verifyAccessToken, checkUserRole} = require("../utils");
 const moment = require("moment");
-const {DATE_FORMAT, BARBERSHOPS_COLLECTION, BOOKING_COLLECTION, REVIEWS_COLLECTION} = require("../consts");
+const {
+    DATE_FORMAT,
+    BARBERSHOPS_COLLECTION,
+    BOOKING_COLLECTION,
+    REVIEWS_COLLECTION,
+    SERVICES_COLLECTION
+} = require("../consts");
 const router = express.Router();
 
 
@@ -20,6 +26,11 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), asy
                 date: req.body.date
             }
         );
+        const serviceDoc = await db.collection(SERVICES_COLLECTION).doc(bookingData.serviceId).get();
+        const serviceData = serviceDoc.data();
+        if (!serviceData || serviceData.barberShopId !== bookingData.barberShopId) {
+            return res.status(400).json('Not a valid service');
+        }
         const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).get();
         const barbershopData = barbershopDoc.data();
         if (!barbershopData) {
@@ -46,6 +57,11 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), as
         const _user_id = req.userId;
         const bookingId = req.query.bookingId;
         const updatedBookingData = new BookingDTO(req.body);
+        const serviceDoc = await db.collection(SERVICES_COLLECTION).doc(updatedBookingData.serviceId).get();
+        const serviceData = serviceDoc.data();
+        if (!serviceData || serviceData.barberShopId !== updatedBookingData.barberShopId) {
+            return res.status(400).json('Invalid serviceId or barberShopId');
+        }
         if (_user_id === updatedBookingData.userId) {
             const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(updatedBookingData._barbershop_id).get();
             const barbershopData = barbershopDoc.data();
@@ -139,5 +155,37 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), asy
     }
 });
 
+router.get('/get-service-by-id',verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
+    try {
+        const serviceId = req.query.serviceId;
+        const serviceDoc = await db.collection(SERVICES_COLLECTION).doc(serviceId).get();
+        if (!serviceDoc.exists) {
+            return res.status(404).json('Service not found');
+        }
+        const serviceData = serviceDoc.data();
+        return res.status(200).json(serviceData);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json('Internal server error');
+    }
+});
+router.get('/get-all-services-by-barbershop', verifyAccessToken, async (req, res) => {
+    try {
+        const barberShopId = req.query.barberShopId;
+        const servicesSnapshot = await db.collection(SERVICES_COLLECTION).where('barberShopId', '==', barberShopId).get();
+        if (servicesSnapshot.empty) {
+            return res.status(404).json('No services found for this barbershop');
+        }
+        const services = [];
+        servicesSnapshot.forEach(doc => {
+            const serviceData = doc.data();
+            services.push({serviceId: doc.id, ...serviceData});
+        });
+        return res.status(200).json(services);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json('Internal server error');
+    }
+});
 
 module.exports = router

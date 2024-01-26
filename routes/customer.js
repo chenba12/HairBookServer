@@ -47,6 +47,7 @@ router.get('/get-shop_by_id', verifyAccessToken, checkUserRole('Customer'), asyn
         if (barberShopSnapshot.exists) {
             const barberShopData = barberShopSnapshot.data();
             barberShopData.barberShopId = barberShopSnapshot.id;
+            console.log(barberShopData)
             res.status(200).json(barberShopData);
         } else {
             res.status(404).json('Barber shop not found');

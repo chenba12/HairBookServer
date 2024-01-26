@@ -1,6 +1,6 @@
 class BookingDTO {
-    constructor({service, date, userId, barberShopId, barberShopName, barberName, customerName}) {
-        this.service = service
+    constructor({serviceId, date, userId, barberShopId, barberShopName, barberName, customerName}) {
+        this.serviceId = serviceId
         this.date = date
         this.userId = userId
         this.barberShopId = barberShopId
