@@ -3,7 +3,7 @@ const {db, verifyAccessToken, checkUserRole} = require("../utils");
 const ReviewDTO = require("../entities/Review");
 const router = express.Router();
 const moment = require("moment");
-const {BOOKING_COLLECTION, REVIEWS_COLLECTION} = require("../consts");
+const {BOOKING_COLLECTION, REVIEWS_COLLECTION, BARBERSHOPS_COLLECTION} = require("../consts");
 
 router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
@@ -25,13 +25,14 @@ router.post('/post-review', verifyAccessToken, checkUserRole('Customer'), async 
             .limit(1)
             .get();
 
-        if (pastBooking.empty) {
-            return res.status(403).json('You cannot post a review without a past booking at this barbershop');
-        }
+        // if (pastBooking.empty) {
+        //     return res.status(403).json('You cannot post a review without a past booking at this barbershop');
+        // }
         const plainObject = {...reviewData};
         const reviewRef = await db.collection(REVIEWS_COLLECTION).add(plainObject);
         const reviewId = reviewRef.id;
         const plainReviewObject = {reviewId: reviewId, ...reviewData};
+        await updateBarberShopRating(barberShopId);
         return res.status(200).json(plainReviewObject);
     } catch (error) {
         console.error('Error in post_review:', error);
@@ -44,7 +45,11 @@ router.delete('/delete-review', verifyAccessToken, checkUserRole('Customer'), as
         const reviewId = req.query.reviewId;
         const isAuthorized = await checkReviewOwnership(userId, reviewId);
         if (isAuthorized) {
+            const reviewSnapshot = await db.collection(REVIEWS_COLLECTION).doc(reviewId).get();
+            const reviewData = reviewSnapshot.data();
+            const barberShopId = reviewData.barberShopId;
             await db.collection(REVIEWS_COLLECTION).doc(reviewId).delete();
+            await updateBarberShopRating(barberShopId);
             res.status(200).json('Review deleted successfully!');
         } else {
             res.status(401).json('Unauthorized access to delete this review');
@@ -57,12 +62,13 @@ router.delete('/delete-review', verifyAccessToken, checkUserRole('Customer'), as
 router.put('/update-review', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const userId = req.userId;
-        const reviewId = req.query.review_id;
+        const reviewId = req.query.reviewId;
         const isAuthorized = await checkReviewOwnership(userId, reviewId);
         if (isAuthorized) {
             const updatedReviewData = new ReviewDTO(req.body);
             const plainReviewObject = {...updatedReviewData};
             await db.collection(REVIEWS_COLLECTION).doc(reviewId).update(plainReviewObject);
+            await updateBarberShopRating(updatedReviewData.barberShopId);
             res.status(200).json(plainReviewObject);
         } else {
             res.status(401).json({message: 'Unauthorized access to update this review'});
@@ -79,7 +85,6 @@ router.get('/get-my-reviews', verifyAccessToken, checkUserRole('Customer'), asyn
         const userReviewsSnapshot = await db.collection(REVIEWS_COLLECTION)
             .where('userId', '==', userId)
             .get();
-
         const userReviews = userReviewsSnapshot.docs.map(doc => {
             const reviewData = doc.data();
             return {review_id: doc.id, ...reviewData};
@@ -92,6 +97,40 @@ router.get('/get-my-reviews', verifyAccessToken, checkUserRole('Customer'), asyn
     }
 });
 
+router.get('/get-reviews', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
+    try {
+        const barberShopId = req.query.barberShopId;
+        const userReviewsSnapshot = await db.collection(REVIEWS_COLLECTION)
+            .where('barberShopId', '==', barberShopId)
+            .get();
+        const userReviews = userReviewsSnapshot.docs.map(doc => {
+            const reviewData = doc.data();
+            return {reviewId: doc.id, ...reviewData};
+        });
+
+        res.status(200).json(userReviews);
+    } catch (error) {
+        console.error('Error in get-my-reviews:', error);
+        res.status(500).json('Internal server error');
+    }
+});
+
+router.get('/get-review-by-id', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
+    try{
+        const reviewId = req.query.reviewId;
+        const reviewSnapshot = await db.collection(REVIEWS_COLLECTION).doc(reviewId).get();
+        if (reviewSnapshot.exists) {
+            const reviewData = reviewSnapshot.data();
+            res.status(200).json({reviewId: reviewSnapshot.id, ...reviewData});
+        } else {
+            res.status(404).json('Review not found');
+        }
+    } catch (error) {
+        console.error('Error in get-review-by-id:', error);
+        res.status(500).json('Internal server error');
+    }
+});
+
 const checkReviewOwnership = async (userId, reviewId) => {
     try {
         const reviewSnapshot = await db.collection(REVIEWS_COLLECTION).doc(reviewId).get();
@@ -100,6 +139,23 @@ const checkReviewOwnership = async (userId, reviewId) => {
     } catch (error) {
         console.error(error);
         return false;
+    }
+};
+
+const updateBarberShopRating = async (barberShopId) => {
+    try {
+        const reviewsSnapshot = await db.collection(REVIEWS_COLLECTION)
+            .where('barberShopId', '==', barberShopId)
+            .get();
+        let totalRating = 0;
+        reviewsSnapshot.docs.forEach(doc => {
+            const reviewData = doc.data();
+            totalRating += Number(reviewData.rating);
+        });
+        const averageRating = totalRating / reviewsSnapshot.size;
+        await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).update({totalRating: averageRating});
+    } catch (error) {
+        console.error('Error in updateBarberShopRating:', error);
     }
 };
 module.exports = router;

@@ -78,13 +78,27 @@ router.delete('/delete-barbershop', verifyAccessToken, checkUserRole('Barber'), 
     try {
         const barberShopId = req.query.barberShopId;
         const barberId = req.userId;
-
         const ownershipCheck = await checkBarbershopOwnership(barberShopId, barberId);
         if (!ownershipCheck.isValid) {
             return res.status(403).json(ownershipCheck.message);
         }
+        const reviewsSnapshot = await db.collection(REVIEWS_COLLECTION)
+            .where('barberShopId', '==', barberShopId)
+            .get();
+        const batch = db.batch();
+        reviewsSnapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        const bookingsSnapshot = await db.collection(BOOKING_COLLECTION)
+            .where('barberShopId', '==', barberShopId)
+            .get();
+
+        bookingsSnapshot.docs.forEach((doc) => {
+            batch.delete(doc.ref);
+        });
+        await batch.commit();
         await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).delete();
-        return res.status(200).json('Barbershop deleted successfully')
+        return res.status(200).json('Barbershop and related reviews/bookings deleted successfully')
     } catch (error) {
         console.error('Error in delete_barbershop:', error);
         return res.status(500).json('Internal server error');

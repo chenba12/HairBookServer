@@ -22,7 +22,7 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole('Customer'), asy
                 barberShopName: req.body.barberShopName,
                 barberName: req.body.barberName,
                 customerName: req.body.customerName,
-                service: req.body.service,
+                serviceId: req.body.serviceId,
                 date: req.body.date
             }
         );
@@ -63,7 +63,7 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), as
             return res.status(400).json('Invalid serviceId or barberShopId');
         }
         if (_user_id === updatedBookingData.userId) {
-            const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(updatedBookingData._barbershop_id).get();
+            const barbershopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(updatedBookingData.barberShopId).get();
             const barbershopData = barbershopDoc.data();
             if (!barbershopData) {
                 return res.status(404).json('Barbershop not found');
@@ -71,7 +71,7 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole('Customer'), as
             if (!await isBookingDateValid(updatedBookingData.date, barbershopData, res)) {
                 return;
             }
-            if (!await isBookingTimeAvailable(updatedBookingData.date, updatedBookingData._barbershop_id, bookingId, res)) {
+            if (!await isBookingTimeAvailable(updatedBookingData.date, updatedBookingData.barberShopId, bookingId, res)) {
                 return;
             }
             const updatedBookingObject = {...updatedBookingData};
@@ -133,10 +133,10 @@ router.get('/user-bookings', verifyAccessToken, checkUserRole('Customer'), async
 
 router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
-        const _user_id = req.userId;
+        const userId = req.userId;
         const now = moment().format(DATE_FORMAT);
         const closestBookingSnapshot = await db.collection(BOOKING_COLLECTION)
-            .where('userId', '==', userid)
+            .where('userId', '==', userId)
             .where('date', '>=', now)
             .orderBy('date')
             .limit(1)
@@ -155,7 +155,7 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole('Customer'), asy
     }
 });
 
-router.get('/get-service-by-id',verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
+router.get('/get-service-by-id', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
     try {
         const serviceId = req.query.serviceId;
         const serviceDoc = await db.collection(SERVICES_COLLECTION).doc(serviceId).get();
@@ -182,6 +182,54 @@ router.get('/get-all-services-by-barbershop', verifyAccessToken, async (req, res
             services.push({serviceId: doc.id, ...serviceData});
         });
         return res.status(200).json(services);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json('Internal server error');
+    }
+});
+
+router.get('/get-available-booking-by-day', verifyAccessToken, async (req, res) => {
+    try {
+        const barberShopId = req.query.barberShopId;
+        const date = req.query.date;
+        const dayOfWeek = moment(date, DATE_FORMAT).format('dddd').toLowerCase();
+        const barberShopDoc = await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).get();
+        if (!barberShopDoc.exists) {
+            return res.status(404).json('Barbershop not found');
+        }
+        const barberShopData = barberShopDoc.data();
+        console.log(dayOfWeek)
+        const workingHours = barberShopData[`${dayOfWeek}Hours`];
+
+        const bookingsSnapshot = await db.collection(BOOKING_COLLECTION)
+            .where('barberShopId', '==', barberShopId)
+            .where('date', '>=', moment(date, DATE_FORMAT).startOf('day').format(DATE_FORMAT))
+            .where('date', '<=', moment(date, DATE_FORMAT).endOf('day').format(DATE_FORMAT))
+            .get();
+
+        const bookings = bookingsSnapshot.docs.map(doc => doc.data());
+
+        const availability = workingHours.map(time => {
+            const bookingExists = bookings.some(booking => moment(booking.date, "DD-MM-YYYY HH:mm").format('HH:mm') === time);
+            return !bookingExists;
+        });
+
+        return res.status(200).json(availability);
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json('Internal server error');
+    }
+});
+
+router.get('/get-booking-by-id', verifyAccessToken, async (req, res) => {
+    try {
+        const bookingId = req.query.bookingId;
+        const bookingSnapshot = await db.collection(BOOKING_COLLECTION).doc(bookingId).get();
+        if (!bookingSnapshot.exists) {
+            return res.status(404).json('Booking not found');
+        }
+        const bookingData = bookingSnapshot.data();
+        return res.status(200).json({bookingId: bookingSnapshot.id, ...bookingData});
     } catch (error) {
         console.error(error);
         return res.status(500).json('Internal server error');
