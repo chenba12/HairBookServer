@@ -12,13 +12,13 @@ const {
 const moment = require("moment");
 const ServiceDTO = require("../entities/Service");
 
-router.get('/get-barber-details', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.get('/get-barber-details', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     await getUserDetails(req, res, () => {
         res.status(200).json(req.userDetails);
     }, 'Barber');
 });
 
-router.post('/create-barbershop', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.post('/create-barbershop', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         req.body.barberId = req.userId;
         const data = new BarberShopDTO(req.body)
@@ -33,7 +33,20 @@ router.post('/create-barbershop', verifyAccessToken, checkUserRole('Barber'), as
         res.status(400).json('Invalid data format');
     }
 });
-router.get('/get-my-barbershops', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+
+router.get('/get-number-of-shops', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
+    try {
+        const userId = req.userId;
+        const barbershopsSnapshot = await db.collection(BARBERSHOPS_COLLECTION)
+            .where('barberId', '==', userId)
+            .get();
+        res.status(200).json(barbershopsSnapshot.size);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json('Internal server error');
+    }
+});
+router.get('/get-my-barbershops', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const userId = req.userId;
         const barbershopsSnapshot = await db.collection(BARBERSHOPS_COLLECTION)
@@ -52,7 +65,7 @@ router.get('/get-my-barbershops', verifyAccessToken, checkUserRole('Barber'), as
         return res.status(500).json('Internal server error');
     }
 });
-router.get('/get-barbershop-by-id', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.get('/get-barbershop-by-id', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;
         const barberId = req.userId;
@@ -74,7 +87,7 @@ router.get('/get-barbershop-by-id', verifyAccessToken, checkUserRole('Barber'), 
         return res.status(500).json('Internal server error');
     }
 });
-router.delete('/delete-barbershop', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.delete('/delete-barbershop', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;
         const barberId = req.userId;
@@ -104,7 +117,7 @@ router.delete('/delete-barbershop', verifyAccessToken, checkUserRole('Barber'), 
         return res.status(500).json('Internal server error');
     }
 });
-router.put('/update-barbershop', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.put('/update-barbershop', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;
         const barberId = req.userId;
@@ -124,7 +137,7 @@ router.put('/update-barbershop', verifyAccessToken, checkUserRole('Barber'), asy
     }
 });
 
-router.get('/get-reviews', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.get('/get-reviews', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;
         const barberId = req.userId;
@@ -147,7 +160,7 @@ router.get('/get-reviews', verifyAccessToken, checkUserRole('Barber'), async (re
     }
 })
 
-router.get('/get-closest-booking', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.get('/get-closest-booking', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberId = req.userId;
         const barbershopsSnapshot = await db.collection(BARBERSHOPS_COLLECTION)
@@ -198,7 +211,7 @@ router.get('/get-closest-booking', verifyAccessToken, checkUserRole('Barber'), a
 });
 
 
-router.get('/my-bookings', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.get('/my-bookings', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberId = req.userId;
         const barberShopId = req.query.barberShopId;
@@ -230,7 +243,7 @@ router.get('/my-bookings', verifyAccessToken, checkUserRole('Barber'), async (re
     }
 });
 
-router.delete('/delete-booking', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.delete('/delete-booking', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberId = req.userId;
         const barberShopId = req.query.barberShopId;
@@ -249,8 +262,6 @@ router.delete('/delete-booking', verifyAccessToken, checkUserRole('Barber'), asy
         res.status(400).json('Invalid data format or booking not found')
     }
 });
-
-
 
 
 const checkBarbershopOwnership = async (barberShopId, barberId) => {
@@ -275,7 +286,7 @@ const checkBarbershopOwnership = async (barberShopId, barberId) => {
     }
 };
 
-router.post('/create-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.post('/create-service', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberId = req.userId;
         const barberShopId = req.query.barberShopId;
@@ -300,7 +311,7 @@ router.post('/create-service', verifyAccessToken, checkUserRole('Barber'), async
     }
 });
 
-router.delete('/delete-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.delete('/delete-service', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberId = req.userId;
         const barberShopId = req.query.barberShopId;
@@ -317,7 +328,7 @@ router.delete('/delete-service', verifyAccessToken, checkUserRole('Barber'), asy
     }
 });
 
-router.put('/update-service', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.put('/update-service', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberId = req.userId;
         const barberShopId = req.query.barberShopId;
@@ -336,7 +347,7 @@ router.put('/update-service', verifyAccessToken, checkUserRole('Barber'), async 
     }
 });
 
-router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (req, res) => {
+router.get('/get-services', verifyAccessToken, checkUserRole(['Barber']), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;
 

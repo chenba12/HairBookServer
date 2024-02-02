@@ -5,7 +5,7 @@ const User = require("../entities/User");
 const {BARBERSHOPS_COLLECTION, USERS_COLLECTION, SERVICES_COLLECTION} = require("../consts");
 const CustomerDTO = require("../entities/Customer");
 
-router.get('/get-all-shops', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
+router.get('/get-all-shops', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
     try {
         const barberShops = await db.collectionGroup(BARBERSHOPS_COLLECTION).get();
         const allBarberShops = [];
@@ -40,24 +40,9 @@ router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (r
     }
 });
 
-router.get('/get-shop_by_id', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
-    try {
-        const barberShopId = req.query.barberShopId;
-        const barberShopSnapshot = await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).get();
-        if (barberShopSnapshot.exists) {
-            const barberShopData = barberShopSnapshot.data();
-            barberShopData.barberShopId = barberShopSnapshot.id;
-            res.status(200).json(barberShopData);
-        } else {
-            res.status(404).json('Barber shop not found');
-        }
-    } catch (error) {
-        console.error('Error in get-shop_by_id:', error);
-        res.status(500).json('Internal server error');
-    }
-});
 
-router.get('/get-customer-details', verifyAccessToken, checkUserRole('Customer'), async (req, res) => {
+
+router.get('/get-customer-details', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
     await getUserDetails(req, res, () => {
         res.status(200).json(req.userDetails);
     }, 'Customer');

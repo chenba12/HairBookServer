@@ -9,6 +9,7 @@ const barbersRouter = require('./routes/barber')
 const authRouter = require('./routes/auth')
 const reviewsRouter = require('./routes/review')
 const bookingRouter = require('./routes/booking')
+const sharedRouter = require('./routes/shared')
 const {readdir, statSync} = require("fs");
 const {customLogger, deleteLogFile} = require("./utils");
 
@@ -28,6 +29,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Set up custom logging middleware
 app.use(customLogger);
 app.use('/', indexRouter);
+app.use('/shared', sharedRouter);
 app.use('/customer', customerRouter);
 app.use('/barber', barbersRouter);
 app.use('/auth', authRouter);

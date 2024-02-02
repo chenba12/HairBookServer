@@ -53,16 +53,14 @@ const customLogger = (req, res, next) => {
     next();
 };
 
-const checkUserRole = (expectedRole) => {
+const checkUserRole = (expectedRoles) => {
     return (req, res, next) => {
         if (!req.userRole) {
             return res.status(401).json('User role not available');
         }
-        if (req.userRole === expectedRole) {
+        if (expectedRoles.includes(req.userRole)) {
             next();
         } else {
-            console.log('User role:', req.userRole);
-            console.log('Expected role:', expectedRole);
             return res.status(403).json('Access forbidden. Insufficient role.');
         }
     };
@@ -161,34 +159,34 @@ async function isBookingDateValid(date, barbershopData, res) {
         res.status(401).json('The barbershop is closed at the requested date/hour');
         return false;
     }
-        return true;
+    return true;
+}
+
+async function isBookingTimeAvailable(date, barberShopId, bookingId, res) {
+    const requestedDate = moment(date, DATE_FORMAT);
+    const existingBooking = await db.collection(BOOKING_COLLECTION)
+        .where('barberShopId', '==', barberShopId)
+        .where('date', '==', requestedDate.format(DATE_FORMAT))
+        .get();
+    if (!existingBooking.empty) {
+        res.status(400).json('Another booking exists at the same time and date');
+        return false;
     }
 
-    async function isBookingTimeAvailable(date, barberShopId, bookingId, res) {
-        const requestedDate = moment(date, DATE_FORMAT);
-        const existingBooking = await db.collection(BOOKING_COLLECTION)
-            .where('barberShopId', '==', barberShopId)
-            .where('date', '==', requestedDate.format(DATE_FORMAT))
-            .get();
-        if (!existingBooking.empty) {
-            res.status(400).json('Another booking exists at the same time and date');
-            return false;
-        }
+    return true;
+}
 
-        return true;
-    }
-
-    module.exports = {
-        admin,
-        db,
-        deleteLogFile,
-        customLogger,
-        verifyAccessToken,
-        isEmailUnique,
-        checkUserRole,
-        addToBlacklist,
-        isTokenRevoked,
-        isBookingDateValid,
-        isBookingTimeAvailable,
-        getUserDetails
-    };
+module.exports = {
+    admin,
+    db,
+    deleteLogFile,
+    customLogger,
+    verifyAccessToken,
+    isEmailUnique,
+    checkUserRole,
+    addToBlacklist,
+    isTokenRevoked,
+    isBookingDateValid,
+    isBookingTimeAvailable,
+    getUserDetails
+};
