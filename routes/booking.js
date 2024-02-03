@@ -6,13 +6,12 @@ const {
     DATE_FORMAT,
     BARBERSHOPS_COLLECTION,
     BOOKING_COLLECTION,
-    REVIEWS_COLLECTION,
-    SERVICES_COLLECTION
+    SERVICES_COLLECTION, CUSTOMER_ROLE
 } = require("../consts");
 const router = express.Router();
 
 
-router.post(('/book-haircut'), verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.post(('/book-haircut'), verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const barberShopId = req.body.barberShopId;
         const bookingData = new BookingDTO(
@@ -52,7 +51,7 @@ router.post(('/book-haircut'), verifyAccessToken, checkUserRole(['Customer']), a
     }
 });
 
-router.put(('/update-booking'), verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.put(('/update-booking'), verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const _user_id = req.userId;
         const bookingId = req.query.bookingId;
@@ -89,7 +88,7 @@ router.put(('/update-booking'), verifyAccessToken, checkUserRole(['Customer']), 
         res.status(400).json('Invalid data format or booking not found');
     }
 });
-router.delete(('/delete-booking'), verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.delete(('/delete-booking'), verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const _user_id = req.userId
         const bookingId = req.query.bookingId;
@@ -107,7 +106,7 @@ router.delete(('/delete-booking'), verifyAccessToken, checkUserRole(['Customer']
     }
 });
 
-router.get('/user-bookings', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.get('/user-bookings', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const userId = req.userId;
         const bookingSnapshot = await db.collection(BOOKING_COLLECTION)
@@ -131,7 +130,7 @@ router.get('/user-bookings', verifyAccessToken, checkUserRole(['Customer']), asy
 });
 
 
-router.get('/closest-booking', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.get('/closest-booking', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const userId = req.userId;
         const now = moment().format(DATE_FORMAT);
@@ -155,7 +154,7 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole(['Customer']), a
     }
 });
 
-router.get('/get-service-by-id', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.get('/get-service-by-id', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const serviceId = req.query.serviceId;
         const serviceDoc = await db.collection(SERVICES_COLLECTION).doc(serviceId).get();

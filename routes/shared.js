@@ -1,9 +1,10 @@
 const express = require('express');
 const {verifyAccessToken, checkUserRole, db} = require("../utils");
-const {BARBERSHOPS_COLLECTION, REVIEWS_COLLECTION} = require("../consts");
+const {BARBERSHOPS_COLLECTION, REVIEWS_COLLECTION, CUSTOMER_ROLE, BARBER_ROLE} = require("../consts");
 const router = express.Router();
 
-router.get('/get-shop_by_id', verifyAccessToken, checkUserRole(['Customer','Barber']), async (req, res) => {
+router.get('/get-shop_by_id', verifyAccessToken, checkUserRole([CUSTOMER_ROLE,
+    BARBER_ROLE]), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;
         const barberShopSnapshot = await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).get();
@@ -20,7 +21,8 @@ router.get('/get-shop_by_id', verifyAccessToken, checkUserRole(['Customer','Barb
     }
 });
 
-router.get('/get-reviews', verifyAccessToken, checkUserRole(['Customer','Barber']), async (req, res) => {
+router.get('/get-reviews', verifyAccessToken, checkUserRole([CUSTOMER_ROLE,
+    BARBER_ROLE]), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;
         const userReviewsSnapshot = await db.collection(REVIEWS_COLLECTION)

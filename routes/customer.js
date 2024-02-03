@@ -1,11 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const {db, verifyAccessToken, checkUserRole, getUserDetails} = require('../utils');
-const User = require("../entities/User");
-const {BARBERSHOPS_COLLECTION, USERS_COLLECTION, SERVICES_COLLECTION} = require("../consts");
-const CustomerDTO = require("../entities/Customer");
+const {BARBERSHOPS_COLLECTION, SERVICES_COLLECTION, CUSTOMER_ROLE} = require("../consts");
 
-router.get('/get-all-shops', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.get('/get-all-shops', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const barberShops = await db.collectionGroup(BARBERSHOPS_COLLECTION).get();
         const allBarberShops = [];
@@ -42,10 +40,10 @@ router.get('/get-services', verifyAccessToken, checkUserRole('Barber'), async (r
 
 
 
-router.get('/get-customer-details', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.get('/get-customer-details', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     await getUserDetails(req, res, () => {
         res.status(200).json(req.userDetails);
-    }, 'Customer');
+    }, CUSTOMER_ROLE);
 });
 
 

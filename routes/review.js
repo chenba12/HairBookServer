@@ -3,9 +3,9 @@ const {db, verifyAccessToken, checkUserRole} = require("../utils");
 const ReviewDTO = require("../entities/Review");
 const router = express.Router();
 const moment = require("moment");
-const {BOOKING_COLLECTION, REVIEWS_COLLECTION, BARBERSHOPS_COLLECTION} = require("../consts");
+const {BOOKING_COLLECTION, REVIEWS_COLLECTION, BARBERSHOPS_COLLECTION, CUSTOMER_ROLE} = require("../consts");
 
-router.post('/post-review', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.post('/post-review', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const reviewData = new ReviewDTO(req.body);
         const barberShopId = reviewData.barberShopId;
@@ -39,7 +39,7 @@ router.post('/post-review', verifyAccessToken, checkUserRole(['Customer']), asyn
         return res.status(500).json('Internal server error');
     }
 });
-router.delete('/delete-review', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.delete('/delete-review', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const userId = req.userId;
         const reviewId = req.query.reviewId;
@@ -59,7 +59,7 @@ router.delete('/delete-review', verifyAccessToken, checkUserRole(['Customer']), 
         res.status(400).json('Invalid data format or review not found');
     }
 });
-router.put('/update-review', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.put('/update-review', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const userId = req.userId;
         const reviewId = req.query.reviewId;
@@ -79,7 +79,7 @@ router.put('/update-review', verifyAccessToken, checkUserRole(['Customer']), asy
     }
 });
 
-router.get('/get-my-reviews', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.get('/get-my-reviews', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try {
         const userId = req.userId;
         const userReviewsSnapshot = await db.collection(REVIEWS_COLLECTION)
@@ -99,7 +99,7 @@ router.get('/get-my-reviews', verifyAccessToken, checkUserRole(['Customer']), as
 
 
 
-router.get('/get-review-by-id', verifyAccessToken, checkUserRole(['Customer']), async (req, res) => {
+router.get('/get-review-by-id', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
     try{
         const reviewId = req.query.reviewId;
         const reviewSnapshot = await db.collection(REVIEWS_COLLECTION).doc(reviewId).get();
