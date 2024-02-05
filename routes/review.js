@@ -87,7 +87,7 @@ router.get('/get-my-reviews', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]),
             .get();
         const userReviews = userReviewsSnapshot.docs.map(doc => {
             const reviewData = doc.data();
-            return {review_id: doc.id, ...reviewData};
+            return {reviewId: doc.id, ...reviewData};
         });
 
         res.status(200).json(userReviews);
