@@ -6,7 +6,7 @@ const {
     DATE_FORMAT,
     BARBERSHOPS_COLLECTION,
     BOOKING_COLLECTION,
-    SERVICES_COLLECTION, CUSTOMER_ROLE
+    SERVICES_COLLECTION, CUSTOMER_ROLE, BARBER_ROLE
 } = require("../consts");
 const router = express.Router();
 
@@ -154,20 +154,6 @@ router.get('/closest-booking', verifyAccessToken, checkUserRole([CUSTOMER_ROLE])
     }
 });
 
-router.get('/get-service-by-id', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
-    try {
-        const serviceId = req.query.serviceId;
-        const serviceDoc = await db.collection(SERVICES_COLLECTION).doc(serviceId).get();
-        if (!serviceDoc.exists) {
-            return res.status(404).json('Service not found');
-        }
-        const serviceData = serviceDoc.data();
-        return res.status(200).json(serviceData);
-    } catch (error) {
-        console.error(error);
-        return res.status(500).json('Internal server error');
-    }
-});
 router.get('/get-all-services-by-barbershop', verifyAccessToken, async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;

@@ -89,7 +89,6 @@ router.get('/get-my-reviews', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]),
             const reviewData = doc.data();
             return {reviewId: doc.id, ...reviewData};
         });
-
         res.status(200).json(userReviews);
     } catch (error) {
         console.error('Error in get-my-reviews:', error);
@@ -98,9 +97,8 @@ router.get('/get-my-reviews', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]),
 });
 
 
-
 router.get('/get-review-by-id', verifyAccessToken, checkUserRole([CUSTOMER_ROLE]), async (req, res) => {
-    try{
+    try {
         const reviewId = req.query.reviewId;
         const reviewSnapshot = await db.collection(REVIEWS_COLLECTION).doc(reviewId).get();
         if (reviewSnapshot.exists) {
@@ -136,7 +134,10 @@ const updateBarberShopRating = async (barberShopId) => {
             const reviewData = doc.data();
             totalRating += Number(reviewData.rating);
         });
-        const averageRating = totalRating / reviewsSnapshot.size;
+        let averageRating = totalRating / reviewsSnapshot.size;
+        if (averageRating === 0 || isNaN(averageRating)) {
+            averageRating = 5;
+        }
         await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).update({totalRating: averageRating});
     } catch (error) {
         console.error('Error in updateBarberShopRating:', error);

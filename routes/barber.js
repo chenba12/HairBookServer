@@ -137,6 +137,34 @@ router.put('/update-barbershop', verifyAccessToken, checkUserRole([BARBER_ROLE])
     }
 });
 
+router.get('/get-all-bookings', verifyAccessToken, checkUserRole([BARBER_ROLE]), async (req, res) => {
+    try {
+        const userId = req.userId;
+        const barbershopsSnapshot = await db.collection(BARBERSHOPS_COLLECTION)
+            .where('barberId', '==', userId)
+            .get();
+        if (barbershopsSnapshot.empty) {
+            return res.status(404).json('No barbershops found for the user');
+        }
+        let allBookings = [];
+        for (const barbershopDoc of barbershopsSnapshot.docs) {
+            const barberShopId = barbershopDoc.id;
+            const bookingSnapshot = await db.collection(BOOKING_COLLECTION)
+                .where('barberShopId', '==', barberShopId)
+                .get();
+            const bookings = bookingSnapshot.docs.map(doc => {
+                const bookingData = doc.data();
+                return {bookingId: doc.id, ...bookingData};
+            });
+            allBookings = allBookings.concat(bookings);
+        }
+        return res.status(200).json(allBookings);
+    } catch (error) {
+        console.error('Error in get-all-bookings:', error);
+        return res.status(500).json('Internal server error');
+    }
+});
+
 router.get('/get-reviews', verifyAccessToken, checkUserRole([BARBER_ROLE]), async (req, res) => {
     try {
         const barberShopId = req.query.barberShopId;

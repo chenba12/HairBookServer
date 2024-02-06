@@ -83,7 +83,7 @@ router.post('/sign-up', async (req, res) => {
         if (emailExists) {
             const userDocRef = await (await db.collection(USERS_COLLECTION).add({...data})).get();
             await db.collection(detailsCollection).doc(userDocRef.id).set({...detailsObject});
-            res.json({...data, accessToken});
+            res.json({userId:userDocRef.id,...data, accessToken});
         } else {
             res.status(400).json("Email already exists.");
         }

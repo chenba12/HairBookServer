@@ -1,8 +1,22 @@
 const express = require('express');
 const {verifyAccessToken, checkUserRole, db} = require("../utils");
-const {BARBERSHOPS_COLLECTION, REVIEWS_COLLECTION, CUSTOMER_ROLE, BARBER_ROLE} = require("../consts");
+const {BARBERSHOPS_COLLECTION, REVIEWS_COLLECTION, CUSTOMER_ROLE, BARBER_ROLE, SERVICES_COLLECTION} = require("../consts");
 const router = express.Router();
 
+router.get('/get-service-by-id', verifyAccessToken, checkUserRole([CUSTOMER_ROLE, BARBER_ROLE]), async (req, res) => {
+    try {
+        const serviceId = req.query.serviceId;
+        const serviceDoc = await db.collection(SERVICES_COLLECTION).doc(serviceId).get();
+        if (!serviceDoc.exists) {
+            return res.status(404).json('Service not found');
+        }
+        const serviceData = serviceDoc.data();
+        return res.status(200).json({serviceId:serviceDoc.id,...serviceData});
+    } catch (error) {
+        console.error(error);
+        return res.status(500).json('Internal server error');
+    }
+});
 router.get('/get-shop_by_id', verifyAccessToken, checkUserRole([CUSTOMER_ROLE,
     BARBER_ROLE]), async (req, res) => {
     try {
