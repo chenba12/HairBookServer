@@ -134,9 +134,13 @@ const updateBarberShopRating = async (barberShopId) => {
             const reviewData = doc.data();
             totalRating += Number(reviewData.rating);
         });
+        console.log('Total Rating:', totalRating, 'Total Reviews:', reviewsSnapshot.size)
         let averageRating = totalRating / reviewsSnapshot.size;
         if (averageRating === 0 || isNaN(averageRating)) {
             averageRating = 5;
+        }
+        if (averageRating === 0 && reviewsSnapshot.size > 0) {
+            averageRating = 0;
         }
         await db.collection(BARBERSHOPS_COLLECTION).doc(barberShopId).update({totalRating: averageRating});
     } catch (error) {
